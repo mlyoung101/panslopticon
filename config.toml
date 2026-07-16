@@ -4,7 +4,7 @@
 [detect]
 
 # Emojis that AI typically likes to use; regex
-emojis = "👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦"
+emojis = "👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦|⚡|🔍|🤖|💥"
 
 # Mean commits per day considered to be excessive
 excessive_commits = 7
@@ -16,7 +16,7 @@ excessive_readme_length = 2000
 excessive_emojis = 5
 
 # Maximum number of emdashes allowed in the README
-emdash_limit = 2
+emdash_limit = 5
 
 # Maximum commit body length in characters
 excessive_commit_length = 100
@@ -29,14 +29,15 @@ readme_signals = [
     "(?i)blazing.*fast",
     "(?i)gpu-accelerated",
     "(?i)web-?scale",
-    "(?i)(project|repo.*) (overview|layout|structure)",
+    "(Project|Repo.*) (?i)(overview|layout|structure)",
     "```mermaid",
     " · ", # centre dot
     "(?i)no more .*\\.",
+    "(?i)how it works"
 ]
 
 # Regexes to detect AI coding tools in Git commits
-[detect.commits]
+[detect.commit]
 claude = ["(?i)Claude (Code|Opus|Fable)", "(?i)noreply@anthropic.com", "(?i)[0-9]+M context", "(?i)Claude-Session"]
 copilot = ["(?i)Co-(authored|created|developed).*Copilot", "(?i)copilot@github.com"]
 codex = ["(?i)OpenAI Codex", "(?i).*@openai.com"]

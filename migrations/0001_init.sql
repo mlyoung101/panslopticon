@@ -12,6 +12,8 @@ CREATE TABLE slop(
     id INTEGER PRIMARY KEY NOT NULL,
     url TEXT NOT NULL,
     date_added TEXT NOT NULL,
+    reason TEXT NOT NULL, -- why this was detected, through what methodology
+    panslop_version TEXT NOT NULL, -- version of panslopticon that detected this
     date_last_seen TEXT NOT NULL,
     dataset_path TEXT, -- Zstd compressed storage location on disk, once checked out
     origin_platform TEXT NOT NULL, -- i.e. github, reddit

@@ -9,6 +9,7 @@ use clap::{Parser, Subcommand};
 use env_logger::{Builder, Env};
 use tokio;
 
+pub mod analyser;
 pub mod types;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -88,7 +89,7 @@ async fn main() -> color_eyre::Result<()> {
             config,
             db,
             debug_override_repo_root,
-        } => todo!(),
+        } => _ = analyser::analyse(config, db, debug_override_repo_root)?,
         Commands::UpdateStats { config, db } => todo!(),
         Commands::Version {} => println!(
             "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://codeberg.org/melyoung/panslopticon",

@@ -17,55 +17,55 @@ pub enum Platform {
 
 #[derive(Debug, FromRow, Clone)]
 pub struct IngressItem {
-    id: u64,
-    url: String,
-    date_added: chrono::NaiveDateTime,
-    origin_platform: Platform,
-    origin_src: String
+    pub id: u64,
+    pub url: String,
+    pub date_added: chrono::NaiveDateTime,
+    pub origin_platform: Platform,
+    pub origin_src: String
 }
 
 #[derive(Debug, FromRow, Clone)]
 pub struct SlopItem {
-    id: u64,
-    url: String,
-    date_added: chrono::NaiveDateTime,
-    date_last_seen: chrono::NaiveDateTime,
-    dataset_path: Option<String>,
-    origin_platform: Platform,
-    origin_src: String
+    pub id: u64,
+    pub url: String,
+    pub date_added: chrono::NaiveDateTime,
+    pub date_last_seen: chrono::NaiveDateTime,
+    pub dataset_path: Option<String>,
+    pub origin_platform: Platform,
+    pub origin_src: String
 }
 
 #[derive(Debug, FromRow, Clone)]
 pub struct NotSlopItem {
-    id: u64,
-    url: String,
-    date_added: chrono::NaiveDateTime,
+    pub id: u64,
+    pub url: String,
+    pub date_added: chrono::NaiveDateTime,
 }
 
 ////
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigDetect {
-    emojis: String,
-    excessive_commits: u32,
-    excessive_readme_length: u32,
-    excessive_emojis: u32,
-    emdash_limit: u32,
-    excessive_commit_length: u32,
-    readme_signals: Vec<String>,
-    commit: HashMap<String, Vec<String>>,
-    files: HashMap<String, Vec<String>>,
+    pub emojis: String,
+    pub excessive_commits: u32,
+    pub excessive_readme_length: u32,
+    pub excessive_emojis: u32,
+    pub emdash_limit: u32,
+    pub excessive_commit_length: u32,
+    pub readme_signals: Vec<String>,
+    pub commit: HashMap<String, Vec<String>>,
+    pub files: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigIngress {
-    gh_tags: Vec<String>,
-    subreddits: Vec<String>,
-    reddit_signals: Vec<String>,
+    pub gh_tags: Vec<String>,
+    pub subreddits: Vec<String>,
+    pub reddit_signals: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PanslopConfig {
-    detect: ConfigDetect,
-    ingress: ConfigIngress,
+    pub detect: ConfigDetect,
+    pub ingress: ConfigIngress,
 }
