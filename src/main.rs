@@ -9,6 +9,8 @@ use clap::{Parser, Subcommand};
 use env_logger::{Builder, Env};
 use tokio;
 
+pub mod types;
+
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Subcommand)]
@@ -20,7 +22,7 @@ enum Commands {
         config: PathBuf,
 
         /// Database path
-        db: PathBuf
+        db: PathBuf,
     },
 
     /// Ingress from Reddit
@@ -30,7 +32,7 @@ enum Commands {
         config: PathBuf,
 
         /// Database path
-        db: PathBuf
+        db: PathBuf,
     },
 
     /// Analyse previously ingressed data
@@ -40,7 +42,11 @@ enum Commands {
         config: PathBuf,
 
         /// Database path
-        db: PathBuf
+        db: PathBuf,
+
+        /// If set, do not pull from SQLite analysis queue; instead use this repo
+        #[arg(long)]
+        debug_override_repo_root: Option<PathBuf>,
     },
 
     /// Update statistics about existing repositories
@@ -50,7 +56,7 @@ enum Commands {
         config: PathBuf,
 
         /// Database path
-        db: PathBuf
+        db: PathBuf,
     },
 
     /// Prints version information.
@@ -74,6 +80,21 @@ async fn main() -> color_eyre::Result<()> {
     let env = Env::new().filter_or("RUST_LOG", "debug");
     Builder::from_env(env).init();
     color_eyre::install()?;
+
+    match args.command {
+        Commands::GHIngress { config, db } => todo!(),
+        Commands::RedditIngress { config, db } => todo!(),
+        Commands::Analyse {
+            config,
+            db,
+            debug_override_repo_root,
+        } => todo!(),
+        Commands::UpdateStats { config, db } => todo!(),
+        Commands::Version {} => println!(
+            "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://codeberg.org/melyoung/panslopticon",
+            VERSION
+        ),
+    };
 
     Ok(())
 }

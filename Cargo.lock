@@ -1484,6 +1484,7 @@ dependencies = [
  "env_logger",
  "eyre",
  "git2",
+ "lazy_static",
  "log",
  "regex",
  "reqwest",

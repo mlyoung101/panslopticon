@@ -2,30 +2,9 @@
 
 # Detection signals
 [detect]
-# Regexes to detect AI coding tools in Git commits
-claude_commit = ["(?i)Claude (Code|Opus)", "(?i)noreply@anthropic.com", "(?i)[0-9]+M context"]
-copilot_commit = ["(?i)Copilot", "(?i)copilot@github.com"]
-codex_commit = ["(?i)OpenAI Codex", "(?i).*@openai.com"]
 
-# Regexes to detect particular AI coding tools in files
-claude_files = [".claude"]
-generic_files = ["AGENTS.md", "SKILLS.md"]
-
-# Signals to potentially consider a README to be AI slop
-readme_signals = [
-    "(?i)load-bearing",
-    "(?i)no .* no .* just .*",
-    "(?i)it's not just .* it's .*",
-    "(?i)blazing.*fast",
-    "(?i)solo (builder|creator|engineer|dev|developer|hacker)",
-    "(?i)i'm building",
-    "(?i)gpu-accelerated",
-    "(?i)webscale|web-scale",
-    "(?i)(project|repo.*) (overview|layout)"
-]
-
-# Emojis that AI typically likes to use
-emojis = ["👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦"]
+# Emojis that AI typically likes to use; regex
+emojis = "👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦"
 
 # Mean commits per day considered to be excessive
 excessive_commits = 7
@@ -42,11 +21,52 @@ emdash_limit = 2
 # Maximum commit body length in characters
 excessive_commit_length = 100
 
+# Signals to potentially consider a README to be AI slop
+readme_signals = [
+    "(?i)load-bearing",
+    "(?i)no .* no .* just .*",
+    "(?i)it's not (just)?.* it's .*",
+    "(?i)blazing.*fast",
+    "(?i)gpu-accelerated",
+    "(?i)web-?scale",
+    "(?i)(project|repo.*) (overview|layout|structure)",
+    "```mermaid",
+    " · ", # centre dot
+    "(?i)no more .*\\.",
+]
+
+# Regexes to detect AI coding tools in Git commits
+[detect.commits]
+claude = ["(?i)Claude (Code|Opus|Fable)", "(?i)noreply@anthropic.com", "(?i)[0-9]+M context", "(?i)Claude-Session"]
+copilot = ["(?i)Co-(authored|created|developed).*Copilot", "(?i)copilot@github.com"]
+codex = ["(?i)OpenAI Codex", "(?i).*@openai.com"]
+
+# Regexes to detect particular AI coding tools in files
+[detect.files]
+claude = [".claude"]
+cursor = [".cursor"]
+generic = ["AGENTS.md", "SKILLS.md", "AI_GUIDE.md", ".agents"]
+
 # Ingress locations
 [ingress]
 # GitHub tags to source slop from
 gh_tags = [
-    "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas"
+    "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas", "fastapi"
 ]
 
-min_stars = 1
+subreddits = [
+    "rust", "zig", "typescript", "programming", "selfhosted", "fpga"
+]
+
+# Reddit post body/title signals
+reddit_signals = [
+    "(?i)no .* no .* just .*",
+    "(?i)it's not just .* it's .*",
+    "(?i)blazing.*fast",
+    "(?i)web-?scale",
+    "(?i)solo (builder|creator|engineer|dev|developer|hacker)",
+    "(?i)gpu-accelerated",
+    "(?i)no more .*",
+    "(?i)(i|i'm) (built|building|created) .*((a|an).*|—)",
+    "(?i)no .*,.*,.*\\.", # e.g. "No cloud, 100% free, single binary."; maybe a bit broad
+]

@@ -41,4 +41,8 @@ CREATE TABLE agents(
     agent TEXT NOT NULL,
 
     FOREIGN KEY (slop_id) REFERENCES slop(id)
-)
+);
+
+-- Indices
+CREATE INDEX not_slop_url_idx ON not_slop(url);
+CREATE INDEX slop_url_idx ON slop(url);
