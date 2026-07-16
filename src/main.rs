@@ -1,3 +1,79 @@
-fn main() {
-    println!("Hello, world!");
+// Copyright (c) 2026 Mel Young.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
+// was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use std::path::PathBuf;
+
+use clap::{Parser, Subcommand};
+use env_logger::{Builder, Env};
+use tokio;
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[derive(Debug, Subcommand)]
+enum Commands {
+    /// Ingress from GitHub
+    #[command()]
+    GHIngress {
+        /// Config TOML path
+        config: PathBuf,
+
+        /// Database path
+        db: PathBuf
+    },
+
+    /// Ingress from Reddit
+    #[command()]
+    RedditIngress {
+        /// Config TOML path
+        config: PathBuf,
+
+        /// Database path
+        db: PathBuf
+    },
+
+    /// Analyse previously ingressed data
+    #[command()]
+    Analyse {
+        /// Config TOML path
+        config: PathBuf,
+
+        /// Database path
+        db: PathBuf
+    },
+
+    /// Update statistics about existing repositories
+    #[command()]
+    UpdateStats {
+        /// Config TOML path
+        config: PathBuf,
+
+        /// Database path
+        db: PathBuf
+    },
+
+    /// Prints version information.
+    #[command()]
+    Version {},
+}
+
+#[derive(Debug, Parser)] // requires `derive` feature
+#[command(name = "panslopticon")]
+#[command(
+    about = format!("Panslopticon (c) 2026 Mel Young; MPL 2.0"),
+)]
+struct PanslopticonCli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[tokio::main]
+async fn main() -> color_eyre::Result<()> {
+    let args = PanslopticonCli::parse();
+    let env = Env::new().filter_or("RUST_LOG", "debug");
+    Builder::from_env(env).init();
+    color_eyre::install()?;
+
+    Ok(())
 }
