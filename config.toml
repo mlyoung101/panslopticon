@@ -1,0 +1,52 @@
+# Panslopticon config
+
+# Detection signals
+[detect]
+# Regexes to detect AI coding tools in Git commits
+claude_commit = ["(?i)Claude (Code|Opus)", "(?i)noreply@anthropic.com", "(?i)[0-9]+M context"]
+copilot_commit = ["(?i)Copilot", "(?i)copilot@github.com"]
+codex_commit = ["(?i)OpenAI Codex", "(?i).*@openai.com"]
+
+# Regexes to detect particular AI coding tools in files
+claude_files = [".claude"]
+generic_files = ["AGENTS.md", "SKILLS.md"]
+
+# Signals to potentially consider a README to be AI slop
+readme_signals = [
+    "(?i)load-bearing",
+    "(?i)no .* no .* just .*",
+    "(?i)it's not just .* it's .*",
+    "(?i)blazing.*fast",
+    "(?i)solo (builder|creator|engineer|dev|developer|hacker)",
+    "(?i)i'm building",
+    "(?i)gpu-accelerated",
+    "(?i)webscale|web-scale",
+    "(?i)(project|repo.*) (overview|layout)"
+]
+
+# Emojis that AI typically likes to use
+emojis = ["👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦"]
+
+# Mean commits per day considered to be excessive
+excessive_commits = 7
+
+# Maximum README length in characters considered to be excessive
+excessive_readme_length = 2000
+
+# Maximum number of emojis allowed in the README
+excessive_emojis = 5
+
+# Maximum number of emdashes allowed in the README
+emdash_limit = 2
+
+# Maximum commit body length in characters
+excessive_commit_length = 100
+
+# Ingress locations
+[ingress]
+# GitHub tags to source slop from
+gh_tags = [
+    "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas"
+]
+
+min_stars = 1
