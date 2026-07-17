@@ -33,7 +33,8 @@ readme_signals = [
     "```mermaid",
     " · ", # centre dot
     "(?i)no more .*\\.",
-    "(?i)how it works"
+    "(?i)how it works",
+    "(?i)(future work)|(suggested milestones)"
 ]
 
 # Regexes to detect AI coding tools in Git commits
@@ -42,11 +43,24 @@ claude = ["(?i)Claude (Code|Opus|Fable)", "(?i)noreply@anthropic.com", "(?i)[0-9
 copilot = ["(?i)Co-(authored|created|developed).*Copilot", "(?i)copilot@github.com"]
 codex = ["(?i)OpenAI Codex", "(?i).*@openai.com"]
 
+generic = [
+    "(--)|→|×|–|—|⸺|⸻", # emdash/unicode
+    "(?i)([0-9]+)?.*(tests )?(pass|passing)",
+    "(?i)rebrand logo?",
+    "(?i)belt-and-suspenders", # what the fuck does this even mean lmao; Claude-ism apparently
+    "(?i)load-bearing",
+    "(?i)no more .*\\.",
+]
+
+# TODO: maybe look for this: (──)+.*(──)+
+
+# TODO grep in more MD files
+
 # Regexes to detect particular AI coding tools in files
 [detect.files]
 claude = [".claude"]
 cursor = [".cursor"]
-generic = ["AGENTS.md", "SKILLS.md", "AI_GUIDE.md", ".agents"]
+generic = ["AGENTS.md", "SKILLS.md", "AI_GUIDE.md", ".agents", ".agent"]
 
 # Ingress locations
 [ingress]
