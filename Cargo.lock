@@ -2045,7 +2045,6 @@ dependencies = [
  "dotenvy",
  "env_logger",
  "eyre",
- "futures",
  "indicatif",
  "lazy_static",
  "log",

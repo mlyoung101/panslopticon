@@ -137,12 +137,12 @@ fn process_commits(
     let mut score = 0.0;
     let mut detected_agents: HashSet<String> = HashSet::new();
 
-    let lines: Vec<String> = commits.lines().map(|x| x.to_string()).collect();
+    // only consider the last 2000 commits
+    let lines: Vec<String> = commits.lines().map(|x| x.to_string()).take(2000).collect();
 
     info!("Now processing commits...");
 
     // parse each commit
-    // TODO run in parallel with futures
     for line in lines.iter().progress() {
         let hash: String = line.split(" ").take(1).collect();
 
@@ -191,6 +191,14 @@ async fn is_definitely_not_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::
     Ok(result.count > 0)
 }
 
+/// Removes an item from the ingress queue
+async fn dequeue_item(id: i64, db: &Pool<Sqlite>) -> color_eyre::Result<()> {
+    let _ = sqlx::query!("DELETE FROM ingress WHERE id = ?;", id)
+        .execute(db)
+        .await?;
+    Ok(())
+}
+
 pub async fn analyse_one(
     config: &PanslopConfig,
     repo: &PathBuf,
@@ -213,6 +221,8 @@ pub async fn analyse_one(
     // these must exist now, since we're not in debug mode
     let db = maybe_db.unwrap();
     let item = maybe_item.unwrap();
+
+    dequeue_item(item.id, db).await?;
 
     // was it slop?! the big decision!!
     if score >= config.scoring.threshold {
@@ -252,7 +262,8 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 // check if it's definitely not slop
                 if is_definitely_not_slop(&row.url, &db).await? {
                     info!("Repo {} is in not_slop table, skipping", row.url);
-                    // TODO
+                    dequeue_item(row.id, &db).await?;
+                    continue;
                 }
 
                 let tempdir = tempfile::Builder::new()
@@ -275,14 +286,14 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
                 info!("... Done");
 
-                return Ok(analyse_one(
+                analyse_one(
                     &config_parsed,
                     &tempdir.path().to_path_buf(),
                     false,
                     Some(&db),
                     Some(&row),
                 )
-                .await?);
+                .await?;
             }
             Err(err) => {
                 info!("Assuming ingress queue is done, error was: {}", err);
