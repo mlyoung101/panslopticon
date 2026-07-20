@@ -3,6 +3,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 // was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+use chrono::Utc;
 use color_eyre::eyre::eyre;
 use indicatif::ProgressIterator;
 use regex::Regex;
@@ -15,6 +16,8 @@ use lazy_static::lazy_static;
 use log::{debug, info};
 
 use crate::types::{IngressItem, PanslopConfig};
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 lazy_static! {
     static ref EMDASH_REGEX: Regex = Regex::new("–|—|⸺|⸻").unwrap();
@@ -222,13 +225,44 @@ pub async fn analyse_one(
     let db = maybe_db.unwrap();
     let item = maybe_item.unwrap();
 
+    // in either case, dequeue the item
     dequeue_item(item.id, db).await?;
+
+    let now = Utc::now();
 
     // was it slop?! the big decision!!
     if score >= config.scoring.threshold {
         info!("Slop detected!! Repo: {}", item.url);
+        sqlx::query!(
+            r#"
+                INSERT INTO slop
+                    (url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform,
+                     origin_src)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+            "#,
+            item.url,
+            now,
+            score,
+            VERSION,
+            now,
+            "",
+            item.origin_platform,
+            item.origin_src
+        )
+        .execute(db)
+        .await?;
     } else {
         info!("Repo '{}' is NOT slop", item.url);
+        sqlx::query!(
+            r#"
+                INSERT INTO not_slop (url, date_added, score) VALUES (?, ?, ?);
+            "#,
+            item.url,
+            now,
+            score
+        )
+        .execute(db)
+        .await?;
     }
 
     Ok(())

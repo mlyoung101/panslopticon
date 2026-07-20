@@ -30,6 +30,8 @@ pub struct SlopItem {
     pub id: i64,
     pub url: String,
     pub date_added: chrono::DateTime<Utc>,
+    pub score: f64,
+    pub panslop_version: String,
     pub date_last_seen: chrono::DateTime<Utc>,
     pub dataset_path: Option<String>,
     pub origin_platform: Platform,
@@ -41,6 +43,7 @@ pub struct NotSlopItem {
     pub id: u64,
     pub url: String,
     pub date_added: chrono::DateTime<Utc>,
+    pub score: f64,
 }
 
 ////
