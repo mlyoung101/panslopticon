@@ -29,9 +29,9 @@ sqlx migrate run
 
 ## Architecture
 ### Detection methodology
-For obvious AI usage: (At least 1 AI tool commit OR At least 1 AI file) AND (Matches at least 1 README signal)
+Detection is configured through `config.toml`, though a number of regexes and other heuristics.
 
-For less obvious usage: Has excessive commits AND Matches at least 3 README signals
+Scores are calculated based on the heuristics. Once a threshold is hit, the repo is considered slop.
 
 ### Tasks
 **IngressGitHub:** Runs once every 3 hours. Scrapes GitHub trending page for repositories made since January 1

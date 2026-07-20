@@ -2,7 +2,6 @@
 
 # Detection signals
 [detect]
-
 # Emojis that AI typically likes to use; regex
 emojis = "👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦|⚡|🔍|🤖|💥"
 
@@ -13,7 +12,7 @@ excessive_commits_thresh = 7
 excessive_readme_length = 2000
 
 # Maximum commit body length in characters
-excessive_commit_length = 100
+excessive_commit_length = 250
 
 # Signals to potentially consider a README to be AI slop
 readme_signals = [
@@ -66,7 +65,11 @@ gh_tags = [
     "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas", "fastapi",
     "webapp"
 ]
-gh_min_stars = 1
+gh_min_stars = 2
+# repo must be created after this date to be considered slop
+# currently this is 1 Jan 2025; technically Devin was released earlier but I think no one used it
+# ! MUST BE RFC 2822 !
+gh_date_cutoff = "Wed, 1 Jan 2025 00:00:00 +0000"
 
 subreddits = [
     "rust", "zig", "typescript", "programming", "selfhosted", "fpga"
@@ -80,3 +83,6 @@ emoji = 1.0
 emdash = 2.0
 excessively_long_readme = 1.0
 excessively_long_commit = 0.5
+
+# the all important threshold to decide if a project is slop or not
+threshold = 250

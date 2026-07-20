@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT id, `url`, date_added, origin_platform, origin_src FROM ingress LIMIT 1;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "ingress",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "name": "url",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ingress",
+            "name": "url"
+          }
+        }
+      },
+      {
+        "name": "date_added",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ingress",
+            "name": "date_added"
+          }
+        }
+      },
+      {
+        "name": "origin_platform",
+        "ordinal": 3,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ingress",
+            "name": "origin_platform"
+          }
+        }
+      },
+      {
+        "name": "origin_src",
+        "ordinal": 4,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ingress",
+            "name": "origin_src"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a066e6041351c201b663de588364a8e164fe170b7f2820be7837ce4ae17c8008"
+}

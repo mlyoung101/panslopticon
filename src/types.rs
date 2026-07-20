@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::*;
 
@@ -17,19 +18,19 @@ pub enum Platform {
 
 #[derive(Debug, FromRow, Clone)]
 pub struct IngressItem {
-    pub id: u64,
+    pub id: i64,
     pub url: String,
-    pub date_added: chrono::NaiveDateTime,
-    pub origin_platform: Platform,
+    pub date_added: String,
+    pub origin_platform: String,
     pub origin_src: String
 }
 
 #[derive(Debug, FromRow, Clone)]
 pub struct SlopItem {
-    pub id: u64,
+    pub id: i64,
     pub url: String,
-    pub date_added: chrono::NaiveDateTime,
-    pub date_last_seen: chrono::NaiveDateTime,
+    pub date_added: chrono::DateTime<Utc>,
+    pub date_last_seen: chrono::DateTime<Utc>,
     pub dataset_path: Option<String>,
     pub origin_platform: Platform,
     pub origin_src: String
@@ -39,7 +40,7 @@ pub struct SlopItem {
 pub struct NotSlopItem {
     pub id: u64,
     pub url: String,
-    pub date_added: chrono::NaiveDateTime,
+    pub date_added: chrono::DateTime<Utc>,
 }
 
 ////
@@ -59,7 +60,8 @@ pub struct ConfigDetect {
 pub struct ConfigIngress {
     pub gh_tags: Vec<String>,
     pub subreddits: Vec<String>,
-    pub gh_min_stars: u32
+    pub gh_min_stars: u32,
+    pub gh_date_cutoff: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -70,6 +72,7 @@ pub struct ConfigScoring {
     pub emdash: f64,
     pub excessively_long_readme: f64,
     pub excessively_long_commit: f64,
+    pub threshold: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

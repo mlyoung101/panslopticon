@@ -9,6 +9,8 @@ use clap::{Parser, Subcommand};
 use env_logger::{Builder, Env};
 use tokio;
 
+use crate::types::PanslopConfig;
+
 pub mod analyser;
 pub mod ingress;
 pub mod types;
@@ -37,7 +39,7 @@ enum Commands {
         db: PathBuf,
     },
 
-    /// Analyse previously ingressed data
+    /// Analyse all previously ingressed data
     #[command()]
     Analyse {
         /// Config TOML path
@@ -45,10 +47,16 @@ enum Commands {
 
         /// Database path
         db: PathBuf,
+    },
 
-        /// If set, do not pull from SQLite analysis queue; instead use this repo
-        #[arg(long)]
-        debug_override_repo_root: Option<PathBuf>,
+    /// Analyse a single repository
+    #[command()]
+    AnalyseOne {
+        /// Config TOML path
+        config: PathBuf,
+
+        /// Repo path
+        repo: PathBuf,
     },
 
     /// Update statistics about existing repositories
@@ -91,11 +99,13 @@ async fn main() -> color_eyre::Result<()> {
     match args.command {
         Commands::GHIngress { config, db } => ingress::ingress_gh(config, db).await?,
         Commands::RedditIngress { config, db } => ingress::ingress_reddit(config, db).await?,
-        Commands::Analyse {
-            config,
-            db,
-            debug_override_repo_root,
-        } => _ = analyser::analyse(config, db, debug_override_repo_root)?,
+        Commands::Analyse { config, db } => _ = analyser::analyse_all(config, db).await?,
+        Commands::AnalyseOne { config, repo } => {
+            let config_str = std::fs::read_to_string(config)?;
+            let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+
+            _ = analyser::analyse_one(&config_parsed, &repo, true).await?;
+        }
         Commands::UpdateStats { config, db } => todo!(),
         Commands::Version {} => println!(
             "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://codeberg.org/melyoung/panslopticon",

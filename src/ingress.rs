@@ -5,7 +5,7 @@
 
 use std::{path::PathBuf, time::Duration};
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use log::{info, warn};
 use roux::Subreddit;
 use rustls::crypto::CryptoProvider;
@@ -47,10 +47,13 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
     let config_str = std::fs::read_to_string(config)?;
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
+    // TODO auth
     let api = octocrab::instance();
 
     let url = format!("sqlite://{}", db.to_string_lossy());
     let db = SqlitePool::connect(&url).await?;
+
+    let cutoff = DateTime::parse_from_rfc2822(&config_parsed.ingress.gh_date_cutoff)?;
 
     for topic in config_parsed.ingress.gh_tags {
         info!("Query GitHub topic: {}", topic);
@@ -66,9 +69,16 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
             .await?;
 
         for repo in result.items {
-            info!("{:?}", repo.name);
             let now = Utc::now();
             let url = repo.html_url.expect("no HTML URL");
+            let creation_date = repo.created_at.unwrap();
+
+            if creation_date < cutoff {
+                info!("Reject repo '{}', created before cutoff date", url);
+                continue;
+            } else {
+                info!("Accept repo: {}", url);
+            }
 
             let insert = sqlx::query!(
                 r#"
@@ -90,7 +100,8 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
             }
         }
 
-        std::thread::sleep(Duration::from_secs(2));
+        info!("Waiting for rate limit...");
+        std::thread::sleep(Duration::from_secs(10)); // rate limits!!
     }
 
     Ok(())
