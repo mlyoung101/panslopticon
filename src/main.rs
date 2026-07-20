@@ -104,7 +104,7 @@ async fn main() -> color_eyre::Result<()> {
             let config_str = std::fs::read_to_string(config)?;
             let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-            _ = analyser::analyse_one(&config_parsed, &repo, true).await?;
+            _ = analyser::analyse_one(&config_parsed, &repo, true, None, None).await?;
         }
         Commands::UpdateStats { config, db } => todo!(),
         Commands::Version {} => println!(

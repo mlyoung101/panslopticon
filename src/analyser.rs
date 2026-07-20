@@ -4,12 +4,12 @@
 // was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use color_eyre::eyre::eyre;
+use indicatif::ProgressIterator;
 use regex::Regex;
 use regex_cache::LazyRegex;
-use sqlx::SqlitePool;
+use sqlx::{Pool, Sqlite, SqlitePool};
 use std::{collections::HashSet, fs, io, path::PathBuf};
 use subprocess::Exec;
-use tempfile::NamedTempFile;
 
 use lazy_static::lazy_static;
 use log::{debug, info};
@@ -31,10 +31,10 @@ fn is_readme(path: &PathBuf) -> bool {
     };
 }
 
-fn compile_readme_signal_mega_regex(config: &PanslopConfig) -> color_eyre::Result<LazyRegex> {
+fn compile_mega_regex(regexes: &Vec<String>) -> color_eyre::Result<LazyRegex> {
     let mut mega_regex = String::new();
 
-    for reg in &config.detect.readme_signals {
+    for reg in regexes {
         mega_regex.push_str(&format!("({})|", &reg));
     }
     mega_regex.pop();
@@ -49,7 +49,7 @@ fn process_readme(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<
         .collect::<Result<Vec<_>, io::Error>>()?;
 
     let maybe_readme_path = all_paths.iter().find(|it| is_readme(it));
-    let signals_regex = compile_readme_signal_mega_regex(&config)?;
+    let signals_regex = compile_mega_regex(&config.detect.readme_signals)?;
 
     if let Some(readme_path) = &maybe_readme_path {
         info!("README: {}", readme_path.to_string_lossy());
@@ -98,18 +98,28 @@ fn process_commit(
 ) -> color_eyre::Result<(f64, HashSet<String>)> {
     let mut score = 0.0;
     let mut detected_agents = HashSet::new();
+
+    // look for each agent (try to cache regexes for a bit of a speed boost)
     for (agent, regexes) in &config.detect.commit {
-        for regex in regexes {
-            let matches = LazyRegex::new(regex)?.captures_iter(commit).count();
-            score += (matches as f64) * config.scoring.ai_commit;
-            detected_agents.insert(agent.to_string());
-        }
+        let regex = compile_mega_regex(regexes)?;
+
+        let matches = regex.captures_iter(commit).count();
+        score += (matches as f64) * config.scoring.ai_commit;
+        detected_agents.insert(agent.to_string());
+    }
+
+    if (commit.trim().len() as u32) >= config.detect.excessive_commit_length {
+        score += config.scoring.excessively_long_commit;
     }
 
     Ok((score, detected_agents))
 }
 
-fn process_commits(config: &PanslopConfig, repo: &PathBuf) -> color_eyre::Result<f64> {
+/// Process all commits in a repo. Returns the score update and a list of detected agents.
+fn process_commits(
+    config: &PanslopConfig,
+    repo: &PathBuf,
+) -> color_eyre::Result<(f64, HashSet<String>)> {
     // git --no-pager -C /home/mel/workspace/slop/devwebui log
     // find all commits
     let commits = String::from_utf8(
@@ -125,9 +135,15 @@ fn process_commits(config: &PanslopConfig, repo: &PathBuf) -> color_eyre::Result
     )?;
 
     let mut score = 0.0;
+    let mut detected_agents: HashSet<String> = HashSet::new();
+
+    let lines: Vec<String> = commits.lines().map(|x| x.to_string()).collect();
+
+    info!("Now processing commits...");
 
     // parse each commit
-    for line in commits.lines() {
+    // TODO run in parallel with futures
+    for line in lines.iter().progress() {
         let hash: String = line.split(" ").take(1).collect();
 
         // get the message for the commit
@@ -149,25 +165,61 @@ fn process_commits(config: &PanslopConfig, repo: &PathBuf) -> color_eyre::Result
                 .stdout,
         )?;
 
-        let (score_update, detected_agents) = process_commit(&config, &msg)?;
+        let (score_update, detected) = process_commit(&config, &msg)?;
         score += score_update;
-
-        // debug!("Commit {}: {}", hash, msg);
+        detected_agents.extend(detected);
     }
 
-    Ok(score)
+    // we need to make sure that we normalise the score increment by the number of commits in the
+    // repo; otherwise repos with very long history would get unexpectedly high scores
+    if score > 0.0 {
+        score /= lines.len() as f64;
+    }
+
+    Ok((score, detected_agents))
+}
+
+/// Checks if the given URL is in the not slop table
+async fn is_definitely_not_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::Result<bool> {
+    let result = sqlx::query!(
+        r#"SELECT COUNT(*) AS count FROM not_slop WHERE url = ?;"#,
+        url
+    )
+    .fetch_one(db)
+    .await?;
+
+    Ok(result.count > 0)
 }
 
 pub async fn analyse_one(
     config: &PanslopConfig,
     repo: &PathBuf,
     debug: bool,
+    maybe_db: Option<&Pool<Sqlite>>,
+    maybe_item: Option<&IngressItem>,
 ) -> color_eyre::Result<()> {
     let mut score = process_readme(config, repo)?;
     info!("Score after processing readme: {}", score);
 
-    score += process_commits(config, repo)?;
+    let (score_update, detected_agents) = process_commits(config, repo)?;
+    score += score_update;
     info!("Score after processing all commits: {}", score);
+
+    // don't do SQL stuff in debug mode
+    if debug {
+        return Ok(());
+    }
+
+    // these must exist now, since we're not in debug mode
+    let db = maybe_db.unwrap();
+    let item = maybe_item.unwrap();
+
+    // was it slop?! the big decision!!
+    if score >= config.scoring.threshold {
+        info!("Slop detected!! Repo: {}", item.url);
+    } else {
+        info!("Repo '{}' is NOT slop", item.url);
+    }
 
     Ok(())
 }
@@ -197,6 +249,12 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
         match maybe_row {
             Ok(row) => {
+                // check if it's definitely not slop
+                if is_definitely_not_slop(&row.url, &db).await? {
+                    info!("Repo {} is in not_slop table, skipping", row.url);
+                    // TODO
+                }
+
                 let tempdir = tempfile::Builder::new()
                     .prefix("panslop_ingress_")
                     .tempdir()?;
@@ -217,9 +275,14 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
                 info!("... Done");
 
-                return Ok(
-                    analyse_one(&config_parsed, &tempdir.path().to_path_buf(), false).await?,
-                );
+                return Ok(analyse_one(
+                    &config_parsed,
+                    &tempdir.path().to_path_buf(),
+                    false,
+                    Some(&db),
+                    Some(&row),
+                )
+                .await?);
             }
             Err(err) => {
                 info!("Assuming ingress queue is done, error was: {}", err);

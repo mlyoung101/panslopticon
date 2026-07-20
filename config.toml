@@ -77,12 +77,20 @@ subreddits = [
 
 # Score calculation
 [scoring]
-ai_commit = 10.0
-readme_signal = 1.0
-emoji = 1.0
-emdash = 2.0
-excessively_long_readme = 1.0
-excessively_long_commit = 0.5
+# Each AI commit gains this many points. That total score is then divided by the total number of commits in
+# the repo (to normalise it)
+ai_commit = 50.0
 
-# the all important threshold to decide if a project is slop or not
-threshold = 250
+readme_signal = 2.0
+
+emoji = 1.0
+
+emdash = 5.0
+
+# This is high because it
+excessively_long_readme = 10.0
+
+excessively_long_commit = 0.25
+
+# !! The all important threshold to decide if a project is slop or not !!
+threshold = 100

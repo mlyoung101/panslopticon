@@ -11,6 +11,8 @@ color-eyre = "0.6.5"
 dotenvy = "0.15.7"
 env_logger = "0.11.11"
 eyre = "0.6.12"
+futures = "0.3.33"
+indicatif = { version = "0.18.6", features = ["futures", "tokio"] }
 lazy_static = "1.5.0"
 log = "0.4.33"
 octocrab = "0.54.0"
