@@ -104,8 +104,10 @@ fn process_commit(
         let regex = compile_mega_regex(regexes)?;
 
         let matches = regex.captures_iter(commit).count();
+        if matches > 0 {
+            detected_agents.insert(agent.to_string());
+        }
         score += (matches as f64) * config.scoring.ai_commit;
-        detected_agents.insert(agent.to_string());
     }
 
     if (commit.trim().len() as u32) >= config.detect.excessive_commit_length {
