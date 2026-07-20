@@ -7,7 +7,6 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use env_logger::{Builder, Env};
-use tokio;
 
 use crate::types::PanslopConfig;
 
@@ -99,14 +98,14 @@ async fn main() -> color_eyre::Result<()> {
     match args.command {
         Commands::GHIngress { config, db } => ingress::ingress_gh(config, db).await?,
         Commands::RedditIngress { config, db } => ingress::ingress_reddit(config, db).await?,
-        Commands::Analyse { config, db } => _ = analyser::analyse_all(config, db).await?,
+        Commands::Analyse { config, db } => analyser::analyse_all(config, db).await?,
         Commands::AnalyseOne { config, repo } => {
             let config_str = std::fs::read_to_string(config)?;
             let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-            _ = analyser::analyse_one(&config_parsed, &repo, true, None, None).await?;
+            analyser::analyse_one(&config_parsed, &repo, true, None, None).await?;
         }
-        Commands::UpdateStats { config, db } => todo!(),
+        Commands::UpdateStats { config: _, db: _ } => todo!(),
         Commands::Version {} => println!(
             "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://codeberg.org/melyoung/panslopticon",
             VERSION

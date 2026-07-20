@@ -7,8 +7,6 @@ use std::{path::PathBuf, time::Duration};
 
 use chrono::{DateTime, Utc};
 use log::{info, warn};
-use roux::Subreddit;
-use rustls::crypto::CryptoProvider;
 use sqlx::{Pool, Sqlite, SqlitePool};
 
 use crate::types::PanslopConfig;
@@ -21,18 +19,18 @@ pub async fn ingress_reddit(config: PathBuf, db: PathBuf) -> color_eyre::Result<
     );
 
     let config_str = std::fs::read_to_string(config)?;
-    let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+    let _config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-    for sub_name in config_parsed.ingress.subreddits {
-        info!("Checking: {}", sub_name);
-
-        let sub = Subreddit::new(&sub_name);
-
-        let new = sub.latest(10, None).await?;
-
-        println!("{:?}", new);
-        break;
-    }
+    // for sub_name in config_parsed.ingress.subreddits {
+    //     info!("Checking: {}", sub_name);
+    //
+    //     let sub = Subreddit::new(&sub_name);
+    //
+    //     let new = sub.latest(10, None).await?;
+    //
+    //     println!("{:?}", new);
+    //     break;
+    // }
 
     Ok(())
 }
@@ -107,7 +105,7 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
                 continue;
             }
 
-            if is_already_slop(&url.to_string(), &&db).await? {
+            if is_already_slop(&url.to_string(), &db).await? {
                 info!("Repo {} already considered slop", url);
                 continue;
             }
@@ -127,7 +125,7 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
             match insert {
                 Ok(_) => {}
                 Err(error) => {
-                    warn!("Failed to insert repo {}: {}", &url, error);
+                    warn!("Failed to insert repo {}: {}", url, error);
                 }
             }
         }

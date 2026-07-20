@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::*;
 
@@ -46,7 +46,7 @@ pub struct NotSlopItem {
     pub score: f64,
 }
 
-////
+///
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigDetect {

@@ -4,13 +4,12 @@
 // was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use chrono::Utc;
-use color_eyre::eyre::eyre;
 use indicatif::ProgressIterator;
 use regex::Regex;
 use regex_cache::LazyRegex;
 use sqlx::{Pool, Sqlite, SqlitePool};
-use std::{collections::HashSet, fs, io, path::PathBuf};
-use subprocess::Exec;
+use std::{collections::HashSet, fs, io, path::{Path, PathBuf}};
+use subprocess::{Exec, Redirection};
 
 use lazy_static::lazy_static;
 use log::{debug, info, warn};
@@ -25,20 +24,20 @@ lazy_static! {
         Regex::new(r#"commit ([a-z0-9]+)\nAuthor: (.*)\nDate:\s+(.*)\n\n([\S\s]*)"#).unwrap();
 }
 
-fn is_readme(path: &PathBuf) -> bool {
+fn is_readme(path: &Path) -> bool {
     let local = path.to_str();
-    return if let Some(l) = local {
+    if let Some(l) = local {
         l.to_lowercase().contains("readme")
     } else {
         false
-    };
+    }
 }
 
 fn compile_mega_regex(regexes: &Vec<String>) -> color_eyre::Result<LazyRegex> {
     let mut mega_regex = String::new();
 
     for reg in regexes {
-        mega_regex.push_str(&format!("({})|", &reg));
+        mega_regex.push_str(&format!("({})|", reg));
     }
     mega_regex.pop();
     debug!("Mega regex: {}", mega_regex);
@@ -47,7 +46,7 @@ fn compile_mega_regex(regexes: &Vec<String>) -> color_eyre::Result<LazyRegex> {
 }
 
 fn process_readme(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<f64> {
-    let all_paths: Vec<PathBuf> = fs::read_dir(&path)?
+    let all_paths: Vec<PathBuf> = fs::read_dir(path)?
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()?;
 
@@ -95,7 +94,7 @@ fn process_readme(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<
 /// detected agents
 fn process_commit(
     config: &PanslopConfig,
-    commit: &String,
+    commit: &str,
 ) -> color_eyre::Result<(f64, HashSet<String>)> {
     let mut score = 0.0;
     let mut detected_agents = HashSet::new();
@@ -119,21 +118,20 @@ fn process_commit(
 /// Process all commits in a repo. Returns the score update and a list of detected agents.
 fn process_commits(
     config: &PanslopConfig,
-    repo: &PathBuf,
+    repo: &Path,
 ) -> color_eyre::Result<(f64, HashSet<String>)> {
     // git --no-pager -C /home/mel/workspace/slop/devwebui log
     // find all commits
-    let commits = String::from_utf8(
-        Exec::cmd("git")
+    let stdout = Exec::cmd("git")
             .arg("--no-pager")
             .arg("-C")
-            .arg(&repo.to_string_lossy().to_string())
+            .arg(repo.to_string_lossy().to_string())
             .arg("log")
             .arg("--pretty=oneline")
             .checked()
             .capture()?
-            .stdout,
-    )?;
+            .stdout;
+    let commits = String::from_utf8_lossy(&stdout);
 
     let mut score = 0.0;
     let mut detected_agents: HashSet<String> = HashSet::new();
@@ -155,7 +153,7 @@ fn process_commits(
             Exec::cmd("git")
                 .arg("--no-pager")
                 .arg("-C")
-                .arg(&repo.to_string_lossy().to_string())
+                .arg(repo.to_string_lossy().to_string())
                 .arg("log")
                 .arg("--format=%B")
                 .arg("-n")
@@ -166,7 +164,7 @@ fn process_commits(
                 .stdout,
         )?;
 
-        let (score_update, detected) = process_commit(&config, &msg)?;
+        let (score_update, detected) = process_commit(config, &msg)?;
         score += score_update;
         detected_agents.extend(detected);
     }
@@ -313,6 +311,8 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                     .arg(format!("{}.git", row.url))
                     .arg(tempdir.path().to_string_lossy().to_string())
                     .checked()
+                    .stdout(Redirection::Null)
+                    .stderr(Redirection::Null)
                     .join()?;
 
                 info!("... Done");
