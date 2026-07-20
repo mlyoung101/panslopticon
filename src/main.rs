@@ -10,6 +10,7 @@ use env_logger::{Builder, Env};
 use tokio;
 
 pub mod analyser;
+pub mod ingress;
 pub mod types;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -78,13 +79,18 @@ struct PanslopticonCli {
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
     let args = PanslopticonCli::parse();
-    let env = Env::new().filter_or("RUST_LOG", "debug");
+    let env = Env::new().filter_or("RUST_LOG", "info");
     Builder::from_env(env).init();
     color_eyre::install()?;
 
+    // https://github.com/snapview/tokio-tungstenite/issues/339#issuecomment-2424668126
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .expect("failed to install TLS provider");
+
     match args.command {
-        Commands::GHIngress { config, db } => todo!(),
-        Commands::RedditIngress { config, db } => todo!(),
+        Commands::GHIngress { config, db } => ingress::ingress_gh(config, db).await?,
+        Commands::RedditIngress { config, db } => ingress::ingress_reddit(config, db).await?,
         Commands::Analyse {
             config,
             db,

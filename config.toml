@@ -63,8 +63,10 @@ generic = ["AGENTS.md", "SKILLS.md", "AI_GUIDE.md", ".agents", ".agent"]
 [ingress]
 # GitHub tags to source slop from
 gh_tags = [
-    "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas", "fastapi"
+    "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas", "fastapi",
+    "webapp"
 ]
+gh_min_stars = 1
 
 subreddits = [
     "rust", "zig", "typescript", "programming", "selfhosted", "fpga"

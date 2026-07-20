@@ -1,7 +1,7 @@
 -- Ingress queue
 CREATE TABLE ingress(
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
-    url TEXT NOT NULL,
+    url TEXT NOT NULL UNIQUE,
     date_added TEXT NOT NULL,
     origin_platform TEXT NOT NULL, -- i.e. github, reddit
     origin_src TEXT NOT NULL -- i.e. r/selfhosted; tag-llm

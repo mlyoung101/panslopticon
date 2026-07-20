@@ -59,6 +59,7 @@ pub struct ConfigDetect {
 pub struct ConfigIngress {
     pub gh_tags: Vec<String>,
     pub subreddits: Vec<String>,
+    pub gh_min_stars: u32
 }
 
 #[derive(Debug, Serialize, Deserialize)]

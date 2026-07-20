@@ -1,0 +1,97 @@
+// Copyright (c) 2026 Mel Young.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
+// was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use std::{path::PathBuf, time::Duration};
+
+use chrono::Utc;
+use log::{info, warn};
+use roux::Subreddit;
+use rustls::crypto::CryptoProvider;
+use sqlx::SqlitePool;
+
+use crate::types::PanslopConfig;
+
+pub async fn ingress_reddit(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
+    info!(
+        "Start Reddit ingress process. Config: {}, DB: {}",
+        config.to_string_lossy(),
+        db.to_string_lossy()
+    );
+
+    let config_str = std::fs::read_to_string(config)?;
+    let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+
+    for sub_name in config_parsed.ingress.subreddits {
+        info!("Checking: {}", sub_name);
+
+        let sub = Subreddit::new(&sub_name);
+
+        let new = sub.latest(10, None).await?;
+
+        println!("{:?}", new);
+        break;
+    }
+
+    Ok(())
+}
+
+pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
+    info!(
+        "Start GitHub ingress process. Config: {}, DB: {}",
+        config.to_string_lossy(),
+        db.to_string_lossy()
+    );
+
+    let config_str = std::fs::read_to_string(config)?;
+    let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+
+    let api = octocrab::instance();
+
+    let url = format!("sqlite://{}", db.to_string_lossy());
+    let db = SqlitePool::connect(&url).await?;
+
+    for topic in config_parsed.ingress.gh_tags {
+        info!("Query GitHub topic: {}", topic);
+
+        let result = api
+            .search()
+            .repositories(&format!(
+                "topic:{} stars:>={}",
+                topic, config_parsed.ingress.gh_min_stars
+            ))
+            .sort("updated")
+            .send()
+            .await?;
+
+        for repo in result.items {
+            info!("{:?}", repo.name);
+            let now = Utc::now();
+            let url = repo.html_url.expect("no HTML URL");
+
+            let insert = sqlx::query!(
+                r#"
+                INSERT INTO ingress(url, date_added, origin_platform, origin_src)
+                VALUES (?, ?, ?, ?);"#,
+                &url.as_str(),
+                &now,
+                "github",
+                format!("tag-{}", topic)
+            )
+            .execute(&db)
+            .await;
+
+            match insert {
+                Ok(_) => {}
+                Err(error) => {
+                    warn!("Failed to insert repo {}: {}", &url, error);
+                }
+            }
+        }
+
+        std::thread::sleep(Duration::from_secs(2));
+    }
+
+    Ok(())
+}

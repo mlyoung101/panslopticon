@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                INSERT INTO ingress(url, date_added, origin_platform, origin_src)\n                VALUES (?, ?, ?, ?);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "5801eb2b235c87f9353b6c6e3c193a7ab2f962d424a557c799713ef29ebc712c"
+}
