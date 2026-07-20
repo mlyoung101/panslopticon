@@ -37,7 +37,7 @@ fn compile_readme_signal_mega_regex(config: &PanslopConfig) -> color_eyre::Resul
     Ok(Regex::new(&mega_regex)?)
 }
 
-fn process_repo(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<()> {
+fn process_readme(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<f64> {
     let all_paths: Vec<PathBuf> = fs::read_dir(&path)?
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()?;
@@ -60,14 +60,33 @@ fn process_repo(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<()
         debug!("Emojis: {}", emojis);
         debug!("Readme length: {}", length);
         debug!("Readme signals (regex): {}", signals);
+
+        signals_regex
+            .captures_iter(&readme)
+            .for_each(|x| debug!("Readme signal: '{}'", x.get_match().as_str()));
+
+        // calculate score increment
+        let mut score = 0.0;
+        if length > config.detect.excessive_readme_length.try_into().unwrap() {
+            score += config.scoring.excessively_long_readme;
+        }
+
+        score += (emojis as f64) * config.scoring.emoji;
+        score += (emdashes as f64) * config.scoring.emdash;
+        score += (signals as f64) * config.scoring.readme_signal;
+
+        Ok(score)
     } else {
         return Err(eyre!(
             "Could not find README for {}",
             path.to_string_lossy()
         ));
     }
+}
 
-    Ok(())
+
+fn process_commits(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<f64> {
+    Ok(0.0)
 }
 
 pub fn analyse(
@@ -93,7 +112,12 @@ pub fn analyse(
             "Use debug override repo: {}",
             debug_override.to_string_lossy()
         );
-        process_repo(&config_parsed, &debug_override)?;
+
+        let mut score = process_readme(&config_parsed, &debug_override)?;
+        debug!("Score after processing readme: {}", score);
+
+        score += process_commits(&config_parsed, &debug_override)?;
+        debug!("Score after processing all commits: {}", score);
     }
 
     Ok(())

@@ -7,16 +7,10 @@
 emojis = "👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦|⚡|🔍|🤖|💥"
 
 # Mean commits per day considered to be excessive
-excessive_commits = 7
+excessive_commits_thresh = 7
 
 # Maximum README length in characters considered to be excessive
 excessive_readme_length = 2000
-
-# Maximum number of emojis allowed in the README
-excessive_emojis = 5
-
-# Maximum number of emdashes allowed in the README
-emdash_limit = 5
 
 # Maximum commit body length in characters
 excessive_commit_length = 100
@@ -34,7 +28,10 @@ readme_signals = [
     " · ", # centre dot
     "(?i)no more .*\\.",
     "(?i)how it works",
-    "(?i)(future work)|(suggested milestones)"
+    "(?i)(future work)|(suggested milestones)",
+    "(?i)agent (skill|contract)",
+    "(?i)bring-your-own",
+    "(?i)early day.*(bug.*|feedback) welcome"
 ]
 
 # Regexes to detect AI coding tools in Git commits
@@ -54,7 +51,7 @@ generic = [
 
 # TODO: maybe look for this: (──)+.*(──)+
 
-# TODO grep in more MD files
+# TODO grep in more MD files (locate all MD files in the repo and grep them against our)
 
 # Regexes to detect particular AI coding tools in files
 [detect.files]
@@ -73,15 +70,11 @@ subreddits = [
     "rust", "zig", "typescript", "programming", "selfhosted", "fpga"
 ]
 
-# Reddit post body/title signals
-reddit_signals = [
-    "(?i)no .* no .* just .*",
-    "(?i)it's not just .* it's .*",
-    "(?i)blazing.*fast",
-    "(?i)web-?scale",
-    "(?i)solo (builder|creator|engineer|dev|developer|hacker)",
-    "(?i)gpu-accelerated",
-    "(?i)no more .*",
-    "(?i)(i|i'm) (built|building|created) .*((a|an).*|—)",
-    "(?i)no .*,.*,.*\\.", # e.g. "No cloud, 100% free, single binary."; maybe a bit broad
-]
+# Score calculation
+[scoring]
+ai_commit = 10.0
+readme_signal = 1.0
+emoji = 1.0
+emdash = 2.0
+excessively_long_readme = 1.0
+excessively_long_commit = 0.5

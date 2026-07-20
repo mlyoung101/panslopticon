@@ -47,10 +47,8 @@ pub struct NotSlopItem {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigDetect {
     pub emojis: String,
-    pub excessive_commits: u32,
+    pub excessive_commits_thresh: u32,
     pub excessive_readme_length: u32,
-    pub excessive_emojis: u32,
-    pub emdash_limit: u32,
     pub excessive_commit_length: u32,
     pub readme_signals: Vec<String>,
     pub commit: HashMap<String, Vec<String>>,
@@ -61,11 +59,21 @@ pub struct ConfigDetect {
 pub struct ConfigIngress {
     pub gh_tags: Vec<String>,
     pub subreddits: Vec<String>,
-    pub reddit_signals: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConfigScoring {
+    pub ai_commit: f64,
+    pub readme_signal: f64,
+    pub emoji: f64,
+    pub emdash: f64,
+    pub excessively_long_readme: f64,
+    pub excessively_long_commit: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PanslopConfig {
     pub detect: ConfigDetect,
     pub ingress: ConfigIngress,
+    pub scoring: ConfigScoring,
 }
