@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO agents(slop_id, agent) VALUES (?, ?);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "c2eedc162c8a1170b8662f89ed9b3a47e33aa2a83f461d5b8f15f181f08e2800"
+}

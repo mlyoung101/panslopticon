@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 use log::{info, warn};
 use roux::Subreddit;
 use rustls::crypto::CryptoProvider;
-use sqlx::SqlitePool;
+use sqlx::{Pool, Sqlite, SqlitePool};
 
 use crate::types::PanslopConfig;
 
@@ -37,6 +37,27 @@ pub async fn ingress_reddit(config: PathBuf, db: PathBuf) -> color_eyre::Result<
     Ok(())
 }
 
+/// Checks if the given URL is in the not slop table
+async fn is_definitely_not_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::Result<bool> {
+    let result = sqlx::query!(
+        r#"SELECT COUNT(*) AS count FROM not_slop WHERE url = ?;"#,
+        url
+    )
+    .fetch_one(db)
+    .await?;
+
+    Ok(result.count > 0)
+}
+
+/// Checks if the given URL is already in the slop table
+async fn is_already_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::Result<bool> {
+    let result = sqlx::query!(r#"SELECT COUNT(*) AS count FROM slop WHERE url = ?;"#, url)
+        .fetch_one(db)
+        .await?;
+
+    Ok(result.count > 0)
+}
+
 pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
     info!(
         "Start GitHub ingress process. Config: {}, DB: {}",
@@ -47,7 +68,7 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
     let config_str = std::fs::read_to_string(config)?;
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-    // TODO auth
+    // TODO auth, for nicer rate limits
     let api = octocrab::instance();
 
     let url = format!("sqlite://{}", db.to_string_lossy());
@@ -71,13 +92,24 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
         for repo in result.items {
             let now = Utc::now();
             let url = repo.html_url.expect("no HTML URL");
-            let creation_date = repo.created_at.unwrap();
+            let creation_date = repo.created_at.expect("no creation date");
 
+            // apply some filters first
             if creation_date < cutoff {
                 info!("Reject repo '{}', created before cutoff date", url);
                 continue;
             } else {
                 info!("Accept repo: {}", url);
+            }
+
+            if is_definitely_not_slop(&url.to_string(), &db).await? {
+                info!("Repo {} is in not_slop table, skipping", url);
+                continue;
+            }
+
+            if is_already_slop(&url.to_string(), &&db).await? {
+                info!("Repo {} already considered slop", url);
+                continue;
             }
 
             let insert = sqlx::query!(

@@ -40,7 +40,7 @@ CREATE TABLE gh_metrics(
 
 -- List of detected agents in a repo
 CREATE TABLE agents(
-    slop_id INTEGER PRIMARY KEY NOT NULL,
+    slop_id INTEGER NOT NULL,
     agent TEXT NOT NULL,
 
     FOREIGN KEY (slop_id) REFERENCES slop(id)

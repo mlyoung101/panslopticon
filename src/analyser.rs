@@ -13,7 +13,7 @@ use std::{collections::HashSet, fs, io, path::PathBuf};
 use subprocess::Exec;
 
 use lazy_static::lazy_static;
-use log::{debug, info};
+use log::{debug, info, warn};
 
 use crate::types::{IngressItem, PanslopConfig};
 
@@ -76,7 +76,7 @@ fn process_readme(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<
 
         // calculate score increment
         let mut score = 0.0;
-        if length > config.detect.excessive_readme_length.try_into().unwrap() {
+        if length > config.detect.excessive_readme_length.try_into()? {
             score += config.scoring.excessively_long_readme;
         }
 
@@ -86,10 +86,8 @@ fn process_readme(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<
 
         Ok(score)
     } else {
-        return Err(eyre!(
-            "Could not find README for {}",
-            path.to_string_lossy()
-        ));
+        warn!("Could not find README for {}", path.to_string_lossy());
+        Ok(0.0)
     }
 }
 
@@ -182,18 +180,6 @@ fn process_commits(
     Ok((score, detected_agents))
 }
 
-/// Checks if the given URL is in the not slop table
-async fn is_definitely_not_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::Result<bool> {
-    let result = sqlx::query!(
-        r#"SELECT COUNT(*) AS count FROM not_slop WHERE url = ?;"#,
-        url
-    )
-    .fetch_one(db)
-    .await?;
-
-    Ok(result.count > 0)
-}
-
 /// Removes an item from the ingress queue
 async fn dequeue_item(id: i64, db: &Pool<Sqlite>) -> color_eyre::Result<()> {
     let _ = sqlx::query!("DELETE FROM ingress WHERE id = ?;", id)
@@ -233,6 +219,7 @@ pub async fn analyse_one(
     // was it slop?! the big decision!!
     if score >= config.scoring.threshold {
         info!("Slop detected!! Repo: {}", item.url);
+
         sqlx::query!(
             r#"
                 INSERT INTO slop
@@ -251,6 +238,23 @@ pub async fn analyse_one(
         )
         .execute(db)
         .await?;
+
+        // what was the ID we just inserted?
+        // FIXME this seems stupid, can't we get it from the query above?
+        let id = sqlx::query!("SELECT id FROM slop ORDER BY id DESC;")
+            .fetch_one(db)
+            .await?
+            .id;
+
+        for agent in detected_agents {
+            sqlx::query!(
+                "INSERT INTO agents(slop_id, agent) VALUES (?, ?);",
+                id,
+                agent
+            )
+            .execute(db)
+            .await?;
+        }
     } else {
         info!("Repo '{}' is NOT slop", item.url);
         sqlx::query!(
@@ -293,13 +297,6 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
         match maybe_row {
             Ok(row) => {
-                // check if it's definitely not slop
-                if is_definitely_not_slop(&row.url, &db).await? {
-                    info!("Repo {} is in not_slop table, skipping", row.url);
-                    dequeue_item(row.id, &db).await?;
-                    continue;
-                }
-
                 let tempdir = tempfile::Builder::new()
                     .prefix("panslop_ingress_")
                     .tempdir()?;
