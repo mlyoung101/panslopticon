@@ -8,7 +8,11 @@ use indicatif::ProgressIterator;
 use regex::Regex;
 use regex_cache::LazyRegex;
 use sqlx::{Pool, Sqlite, SqlitePool};
-use std::{collections::HashSet, fs, io, path::{Path, PathBuf}};
+use std::{
+    collections::HashSet,
+    fs, io,
+    path::{Path, PathBuf},
+};
 use subprocess::{Exec, Redirection};
 
 use lazy_static::lazy_static;
@@ -125,14 +129,14 @@ fn process_commits(
     // git --no-pager -C /home/mel/workspace/slop/devwebui log
     // find all commits
     let stdout = Exec::cmd("git")
-            .arg("--no-pager")
-            .arg("-C")
-            .arg(repo.to_string_lossy().to_string())
-            .arg("log")
-            .arg("--pretty=oneline")
-            .checked()
-            .capture()?
-            .stdout;
+        .arg("--no-pager")
+        .arg("-C")
+        .arg(repo.to_string_lossy().to_string())
+        .arg("log")
+        .arg("--pretty=oneline")
+        .checked()
+        .capture()?
+        .stdout;
     let commits = String::from_utf8_lossy(&stdout);
 
     let mut score = 0.0;
@@ -180,6 +184,39 @@ fn process_commits(
     Ok((score, detected_agents))
 }
 
+fn process_files(
+    config: &PanslopConfig,
+    path: &PathBuf,
+) -> color_eyre::Result<(f64, HashSet<String>)> {
+    let all_paths: Vec<PathBuf> = fs::read_dir(path)?
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>, io::Error>>()?;
+
+    let mut score = 0.0;
+    let mut detected_agents: HashSet<String> = HashSet::new();
+
+    // process visible files
+    for (agent, regexes) in &config.detect.files {
+        let regex = compile_mega_regex(regexes)?;
+        if all_paths
+            .iter()
+            .any(|x| regex.is_match(&x.to_string_lossy()))
+        {
+            // agent detected!
+            info!(
+                "Detected agent {} in files by query {} in visible file",
+                agent, regex
+            );
+            score += config.scoring.ai_file;
+            detected_agents.insert(agent.to_string());
+        }
+
+        // TODO process .gitignore and .dockerignore, with a separate function
+    }
+
+    Ok((score, detected_agents))
+}
+
 /// Removes an item from the ingress queue
 async fn dequeue_item(id: i64, db: &Pool<Sqlite>) -> color_eyre::Result<()> {
     let _ = sqlx::query!("DELETE FROM ingress WHERE id = ?;", id)
@@ -198,9 +235,14 @@ pub async fn analyse_one(
     let mut score = process_readme(config, repo)?;
     info!("Score after processing readme: {}", score);
 
-    let (score_update, detected_agents) = process_commits(config, repo)?;
-    score += score_update;
+    let (commits_score, mut detected_agents) = process_commits(config, repo)?;
+    score += commits_score;
     info!("Score after processing all commits: {}", score);
+
+    let (files_score, files_agents) = process_files(config, repo)?;
+    score += files_score;
+    detected_agents.extend(files_agents);
+    info!("Score after processing all files: {}", score);
 
     // don't do SQL stuff in debug mode
     if debug {
@@ -331,7 +373,10 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 match result {
                     Ok(_) => {}
                     Err(err) => {
-                        warn!("Failed to process repo '{}': {}. Removing from ingress queue.", row.url, err);
+                        warn!(
+                            "Failed to process repo '{}': {}. Removing from ingress queue.",
+                            row.url, err
+                        );
                         dequeue_item(row.id, &db).await?;
                         continue;
                     }

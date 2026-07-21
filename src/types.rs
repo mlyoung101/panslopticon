@@ -76,6 +76,8 @@ pub struct ConfigScoring {
     pub excessively_long_readme: f64,
     pub excessively_long_commit: f64,
     pub threshold: f64,
+    pub ai_file: f64,
+    pub ai_file_hidden: f64
 }
 
 #[derive(Debug, Serialize, Deserialize)]

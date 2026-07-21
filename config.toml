@@ -36,8 +36,12 @@ readme_signals = [
 # Regexes to detect AI coding tools in Git commits
 [detect.commit]
 claude = ["(?i)Claude (Code|Opus|Fable)", "(?i)noreply@anthropic.com", "(?i)[0-9]+M context", "(?i)Claude-Session"]
-copilot = ["(?i)Co-(authored|created|developed).*Copilot", "(?i)copilot@github.com"]
+copilot = ["(?i)Co-(authored|created|developed).*Copilot", "(?i)copilot@github.com", "175728472+Copilot"]
 codex = ["(?i)OpenAI Codex", "(?i).*@openai.com"]
+# these are from:
+# https://codeberg.org/polyphony/repo-slopscore/src/branch/main/detection_tokens/tools.json
+coderabbit = ["noreply@coderabbit.ai"]
+gemini = ["(?i)gemini (pro|flash)", "(?i)antigravity"]
 
 generic = [
     "(--)|→|×|–|—|⸺|⸻", # emdash/unicode
@@ -54,8 +58,11 @@ generic = [
 
 # Regexes to detect particular AI coding tools in files
 [detect.files]
-claude = [".claude"]
+claude = [".claude", "CLAUDE.md"]
 cursor = [".cursor"]
+copilot = [".github/skills"]
+codex = [".codex", "CODEX.md"]
+gemini = [".gemini"]
 generic = ["AGENTS.md", "SKILLS.md", "AI_GUIDE.md", ".agents", ".agent"]
 
 # Ingress locations
@@ -63,7 +70,8 @@ generic = ["AGENTS.md", "SKILLS.md", "AI_GUIDE.md", ".agents", ".agent"]
 # GitHub tags to source slop from
 gh_tags = [
     "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas", "fastapi",
-    "webapp", "fpga", "asic", "chip", "python"
+    "webapp", "fpga", "asic", "chip", "python", "javascript", "cpp", "gpu", "library", "c", "webgpu", "java",
+    "kotlin"
 ]
 gh_min_stars = 2
 # repo must be created after this date to be considered slop
@@ -81,13 +89,19 @@ subreddits = [
 # the repo (to normalise it)
 ai_commit = 50.0
 
-readme_signal = 2.0
+readme_signal = 5.0
 
 emoji = 1.0
 
 emdash = 5.0
 
-# This is high because it
+# A single AI file that is not hidden
+ai_file = 20.0
+
+# An AI file that **is** hidden, means the author intentionally is trying to hide it from us...
+ai_file_hidden = 100.0
+
+# This is high because it needs to weigh against the other scores, which are applied per commit
 excessively_long_readme = 10.0
 
 excessively_long_commit = 0.25
