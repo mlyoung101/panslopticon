@@ -319,14 +319,23 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
                 info!("... Done");
 
-                analyse_one(
+                let result = analyse_one(
                     &config_parsed,
                     &tempdir.path().to_path_buf(),
                     false,
                     Some(&db),
                     Some(&row),
                 )
-                .await?;
+                .await;
+
+                match result {
+                    Ok(_) => {}
+                    Err(err) => {
+                        warn!("Failed to process repo '{}': {}. Removing from ingress queue.", row.url, err);
+                        dequeue_item(row.id, &db).await?;
+                        continue;
+                    }
+                }
             }
             Err(err) => {
                 info!("Assuming ingress queue is done, error was: {}", err);

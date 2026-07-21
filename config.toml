@@ -63,7 +63,7 @@ generic = ["AGENTS.md", "SKILLS.md", "AI_GUIDE.md", ".agents", ".agent"]
 # GitHub tags to source slop from
 gh_tags = [
     "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas", "fastapi",
-    "webapp"
+    "webapp", "fpga", "asic", "chip", "python"
 ]
 gh_min_stars = 2
 # repo must be created after this date to be considered slop
