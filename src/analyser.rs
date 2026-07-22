@@ -7,6 +7,7 @@ use chrono::Utc;
 use indicatif::ProgressIterator;
 use regex::Regex;
 use regex_cache::LazyRegex;
+use reqwest::StatusCode;
 use sqlx::{Pool, Sqlite, SqlitePool};
 use std::{
     collections::HashSet,
@@ -43,6 +44,7 @@ fn compile_mega_regex(regexes: &Vec<String>) -> color_eyre::Result<LazyRegex> {
     for reg in regexes {
         mega_regex.push_str(&format!("({})|", reg));
     }
+    // the last character is a '|' which we don't want
     mega_regex.pop();
     debug!("Mega regex: {}", mega_regex);
 
@@ -314,6 +316,12 @@ pub async fn analyse_one(
     Ok(())
 }
 
+async fn check_repo_exists(url: &String) -> color_eyre::Result<bool> {
+    let client = reqwest::Client::new();
+    let status = client.head(url).send().await?;
+    Ok(status.status().is_success())
+}
+
 pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
     info!(
         "Start analysis of all ingress items. Config: {}, DB: {}",
@@ -343,7 +351,13 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                     .prefix("panslop_ingress_")
                     .tempdir()?;
 
-                info!("Checkout: {}", row.url);
+                info!("Try checkout: {}", row.url);
+
+                if !check_repo_exists(&row.url).await? {
+                    warn!("Repo no longer exists, dropping");
+                    dequeue_item(row.id, &db).await?;
+                    continue;
+                }
 
                 // based on:
                 // https://codeberg.org/polyphony/repo-slopscore/src/branch/main/src/git/clone.rs#L39
