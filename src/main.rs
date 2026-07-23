@@ -14,6 +14,7 @@ pub mod analyser;
 pub mod ingress;
 pub mod repo;
 pub mod types;
+pub mod update;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -107,7 +108,7 @@ async fn main() -> color_eyre::Result<()> {
             todo!()
             // analyser::analyse_one(&config_parsed, &repo, true, None, None).await?;
         }
-        Commands::UpdateStats { config: _, db: _ } => todo!(),
+        Commands::UpdateStats { config, db } => update::update_all(config, db).await?,
         Commands::Version {} => println!(
             "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://codeberg.org/melyoung/panslopticon",
             VERSION

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE slop SET date_last_seen = ? WHERE id = ?;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "64378dc7a3fcf28f388f6491fa0fd03a5d707a30484c728b2c43f117cfcb15f0"
+}

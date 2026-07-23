@@ -29,12 +29,12 @@ pub struct IngressItem {
 pub struct SlopItem {
     pub id: i64,
     pub url: String,
-    pub date_added: chrono::DateTime<Utc>,
+    pub date_added: String,
     pub score: f64,
     pub panslop_version: String,
-    pub date_last_seen: chrono::DateTime<Utc>,
+    pub date_last_seen: String,
     pub dataset_path: Option<String>,
-    pub origin_platform: Platform,
+    pub origin_platform: String,
     pub origin_src: String,
 }
 

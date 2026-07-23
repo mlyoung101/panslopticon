@@ -1,0 +1,114 @@
+// Copyright (c) 2026 Mel Young.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
+// was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use std::{path::PathBuf, time::Duration};
+
+use chrono::Utc;
+use log::{info, warn};
+use sqlx::SqlitePool;
+
+use crate::{
+    analyser,
+    repo::GhRemoteRepo,
+    types::{IngressItem, PanslopConfig, SlopItem},
+};
+
+pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
+    info!(
+        "Start update of all existing items. Config: {}, DB: {}",
+        config.to_string_lossy(),
+        db.to_string_lossy()
+    );
+
+    let config_str = std::fs::read_to_string(config)?;
+    let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+
+    let url = format!("sqlite://{}", db.to_string_lossy());
+    let db = SqlitePool::connect(&url).await?;
+
+    // id INTEGER PRIMARY KEY NOT NULL,
+    // url TEXT NOT NULL,
+    // date_added TEXT NOT NULL,
+    // score REAL NOT NULL, -- why this was detected, the score
+    // panslop_version TEXT NOT NULL, -- version of panslopticon that detected this
+    // date_last_seen TEXT NOT NULL,
+    // dataset_path TEXT, -- Zstd compressed storage location on disk, once checked out
+    // origin_platform TEXT NOT NULL, -- i.e. github, reddit
+    // origin_src TEXT NOT NULL -- i.e. r/selfhosted; tag-llm
+
+    let slop = sqlx::query_as!(
+        SlopItem,
+        r#"
+            SELECT
+        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src
+            FROM slop;
+        "#
+    )
+    .fetch_all(&db)
+    .await?;
+
+    for item in slop {
+        info!("Update repo: {}", &item.url);
+        let repo = GhRemoteRepo::new(item.url.clone());
+
+        if repo.exists().await? {
+            info!("Still exists");
+            let now = Utc::now();
+            sqlx::query!(
+                "UPDATE slop SET date_last_seen = ? WHERE id = ?;",
+                now,
+                item.id
+            )
+            .execute(&db)
+            .await?;
+        } else {
+            warn!("No LONGER exists!!");
+        }
+
+        // check if we're missing a record of the recorded agents (we forgot to do this in early
+        // versions)
+        let has_agent_mapping =
+            sqlx::query!("SELECT agent FROM agents WHERE slop_id = ?;", item.id)
+                .fetch_optional(&db)
+                .await?
+                .is_some();
+
+        if !has_agent_mapping {
+            warn!("Repo is missing agent mapping!");
+
+            // so, what we'll do here because i'm incredibly lazy, is delete the item and re-insert
+            // it lol
+            let local_repo = repo.clone().await?;
+
+            // this is extremely ugly, we will make our own ingress item
+            let ingress_item = IngressItem {
+                id: 999999999, // this is an imaginary item
+                url: item.url.clone(),
+                date_added: item.date_added,
+                origin_platform: item.origin_platform,
+                origin_src: item.origin_src,
+            };
+
+            analyser::analyse_one(
+                &config_parsed,
+                &local_repo,
+                false,
+                Some(&db),
+                Some(&ingress_item),
+            )
+            .await?;
+
+            sqlx::query!("DELETE FROM slop WHERE id = ?;", item.id)
+                .execute(&db)
+                .await?;
+        }
+
+        // wait for HIDDEN(!) rate limits
+        info!("Waiting for rate limit...");
+        std::thread::sleep(Duration::from_secs(10));
+    }
+
+    Ok(())
+}

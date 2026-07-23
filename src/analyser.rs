@@ -222,7 +222,15 @@ pub async fn analyse_one(
     let item = maybe_item.unwrap();
 
     // in either case, dequeue the item
-    dequeue_item(item.id, db).await?;
+    match dequeue_item(item.id, db).await {
+        Ok(_) => {}
+        Err(err) => {
+            warn!(
+                "Failed to dequeue ingress item ID: {}. Why: {}. This is presumably because we are being called from update.rs?",
+                item.id, err
+            );
+        }
+    }
 
     let now = Utc::now();
 
