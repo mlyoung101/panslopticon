@@ -26,11 +26,6 @@ impl GhRemoteRepo {
     }
 
     pub async fn clone(&self) -> color_eyre::Result<GhLocalRepo> {
-        info!("Check repo exists");
-        if !&self.exists().await? {
-            return Err(eyre!("Repo {} does not exist", self.url.to_string()));
-        }
-
         let tempdir = tempfile::Builder::new()
             .prefix("panslop_ingress_")
             .tempdir()?;

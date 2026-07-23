@@ -317,6 +317,12 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
             Ok(row) => {
                 info!("Try checkout: {}", row.url);
                 let remote_repo = GhRemoteRepo::new(row.url.clone());
+                if !remote_repo.exists().await? {
+                    warn!("Repo {} no longer exists", remote_repo.url);
+                    dequeue_item(row.id, &db).await?;
+                    continue;
+                }
+
                 let local_repo = remote_repo.clone().await?;
 
                 let result =

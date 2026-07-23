@@ -65,6 +65,7 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
             .await?;
         } else {
             warn!("No LONGER exists!!");
+            continue;
         }
 
         // check if we're missing a record of the recorded agents (we forgot to do this in early
