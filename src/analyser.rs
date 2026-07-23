@@ -7,19 +7,20 @@ use chrono::Utc;
 use indicatif::ProgressIterator;
 use regex::Regex;
 use regex_cache::LazyRegex;
-use reqwest::StatusCode;
 use sqlx::{Pool, Sqlite, SqlitePool};
 use std::{
     collections::HashSet,
-    fs, io,
+    fs,
     path::{Path, PathBuf},
 };
-use subprocess::{Exec, Redirection};
 
 use lazy_static::lazy_static;
 use log::{debug, info, warn};
 
-use crate::types::{IngressItem, PanslopConfig};
+use crate::{
+    repo::{GhLocalRepo, GhRemoteRepo},
+    types::{IngressItem, PanslopConfig},
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -51,10 +52,8 @@ fn compile_mega_regex(regexes: &Vec<String>) -> color_eyre::Result<LazyRegex> {
     Ok(LazyRegex::new(&mega_regex)?)
 }
 
-fn process_readme(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<f64> {
-    let all_paths: Vec<PathBuf> = fs::read_dir(path)?
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>()?;
+fn process_readme(config: &PanslopConfig, repo: &GhLocalRepo) -> color_eyre::Result<f64> {
+    let all_paths = repo.get_all_paths()?;
 
     let maybe_readme_path = all_paths.iter().find(|it| is_readme(it));
     let signals_regex = compile_mega_regex(&config.detect.readme_signals)?;
@@ -91,7 +90,10 @@ fn process_readme(config: &PanslopConfig, path: &PathBuf) -> color_eyre::Result<
 
         Ok(score)
     } else {
-        warn!("Could not find README for {}", path.to_string_lossy());
+        warn!(
+            "Could not find README for {}",
+            repo.path.path().to_string_lossy()
+        );
         Ok(0.0)
     }
 }
@@ -126,51 +128,17 @@ fn process_commit(
 /// Process all commits in a repo. Returns the score update and a list of detected agents.
 fn process_commits(
     config: &PanslopConfig,
-    repo: &Path,
+    repo: &GhLocalRepo,
 ) -> color_eyre::Result<(f64, HashSet<String>)> {
-    // git --no-pager -C /home/mel/workspace/slop/devwebui log
-    // find all commits
-    let stdout = Exec::cmd("git")
-        .arg("--no-pager")
-        .arg("-C")
-        .arg(repo.to_string_lossy().to_string())
-        .arg("log")
-        .arg("--pretty=oneline")
-        .checked()
-        .capture()?
-        .stdout;
-    let commits = String::from_utf8_lossy(&stdout);
-
     let mut score = 0.0;
     let mut detected_agents: HashSet<String> = HashSet::new();
 
-    // only consider the last 2000 commits
-    let lines: Vec<String> = commits.lines().map(|x| x.to_string()).take(2000).collect();
-
     info!("Now processing commits...");
+    let commits = repo.get_commit_hashes(2000)?;
 
     // parse each commit
-    for line in lines.iter().progress() {
-        let hash: String = line.split(" ").take(1).collect();
-
-        // get the message for the commit
-        // git --no-pager -C /home/mel/workspace/slop/devwebui log --format=%B -n 1 8866e9209648b45cf2dfc438ad79b1a2721ca433
-        // https://stackoverflow.com/a/3357357/5007892
-
-        let msg = String::from_utf8(
-            Exec::cmd("git")
-                .arg("--no-pager")
-                .arg("-C")
-                .arg(repo.to_string_lossy().to_string())
-                .arg("log")
-                .arg("--format=%B")
-                .arg("-n")
-                .arg("1")
-                .arg(hash)
-                .checked()
-                .capture()?
-                .stdout,
-        )?;
+    for hash in commits.iter().progress() {
+        let msg = repo.get_commit_message(hash)?;
 
         let (score_update, detected) = process_commit(config, &msg)?;
         score += score_update;
@@ -180,7 +148,7 @@ fn process_commits(
     // we need to make sure that we normalise the score increment by the number of commits in the
     // repo; otherwise repos with very long history would get unexpectedly high scores
     if score > 0.0 {
-        score /= lines.len() as f64;
+        score /= commits.len() as f64;
     }
 
     Ok((score, detected_agents))
@@ -188,11 +156,9 @@ fn process_commits(
 
 fn process_files(
     config: &PanslopConfig,
-    path: &PathBuf,
+    repo: &GhLocalRepo,
 ) -> color_eyre::Result<(f64, HashSet<String>)> {
-    let all_paths: Vec<PathBuf> = fs::read_dir(path)?
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>()?;
+    let all_paths = repo.get_all_paths()?;
 
     let mut score = 0.0;
     let mut detected_agents: HashSet<String> = HashSet::new();
@@ -229,7 +195,7 @@ async fn dequeue_item(id: i64, db: &Pool<Sqlite>) -> color_eyre::Result<()> {
 
 pub async fn analyse_one(
     config: &PanslopConfig,
-    repo: &PathBuf,
+    repo: &GhLocalRepo,
     debug: bool,
     maybe_db: Option<&Pool<Sqlite>>,
     maybe_item: Option<&IngressItem>,
@@ -316,12 +282,6 @@ pub async fn analyse_one(
     Ok(())
 }
 
-async fn check_repo_exists(url: &String) -> color_eyre::Result<bool> {
-    let client = reqwest::Client::new();
-    let status = client.head(url).send().await?;
-    Ok(status.status().is_success())
-}
-
 pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
     info!(
         "Start analysis of all ingress items. Config: {}, DB: {}",
@@ -347,42 +307,12 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
         match maybe_row {
             Ok(row) => {
-                let tempdir = tempfile::Builder::new()
-                    .prefix("panslop_ingress_")
-                    .tempdir()?;
-
                 info!("Try checkout: {}", row.url);
+                let remote_repo = GhRemoteRepo::new(row.url.clone());
+                let local_repo = remote_repo.clone().await?;
 
-                if !check_repo_exists(&row.url).await? {
-                    warn!("Repo no longer exists, dropping");
-                    dequeue_item(row.id, &db).await?;
-                    continue;
-                }
-
-                // based on:
-                // https://codeberg.org/polyphony/repo-slopscore/src/branch/main/src/git/clone.rs#L39
-                Exec::cmd("git")
-                    .arg("clone")
-                    .arg("--sparse")
-                    .arg("--single-branch")
-                    .arg("--filter=tree:0")
-                    .arg(format!("{}.git", row.url))
-                    .arg(tempdir.path().to_string_lossy().to_string())
-                    .checked()
-                    .stdout(Redirection::Null)
-                    .stderr(Redirection::Null)
-                    .join()?;
-
-                info!("... Done");
-
-                let result = analyse_one(
-                    &config_parsed,
-                    &tempdir.path().to_path_buf(),
-                    false,
-                    Some(&db),
-                    Some(&row),
-                )
-                .await;
+                let result =
+                    analyse_one(&config_parsed, &local_repo, false, Some(&db), Some(&row)).await;
 
                 match result {
                     Ok(_) => {}

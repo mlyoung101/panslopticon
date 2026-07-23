@@ -13,7 +13,7 @@ use sqlx::prelude::*;
 pub enum Platform {
     GitHub,
     Reddit,
-    Unknown
+    Unknown,
 }
 
 #[derive(Debug, FromRow, Clone)]
@@ -22,7 +22,7 @@ pub struct IngressItem {
     pub url: String,
     pub date_added: String,
     pub origin_platform: String,
-    pub origin_src: String
+    pub origin_src: String,
 }
 
 #[derive(Debug, FromRow, Clone)]
@@ -35,7 +35,7 @@ pub struct SlopItem {
     pub date_last_seen: chrono::DateTime<Utc>,
     pub dataset_path: Option<String>,
     pub origin_platform: Platform,
-    pub origin_src: String
+    pub origin_src: String,
 }
 
 #[derive(Debug, FromRow, Clone)]
@@ -77,7 +77,7 @@ pub struct ConfigScoring {
     pub excessively_long_commit: f64,
     pub threshold: f64,
     pub ai_file: f64,
-    pub ai_file_hidden: f64
+    pub ai_file_hidden: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

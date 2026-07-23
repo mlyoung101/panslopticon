@@ -12,6 +12,7 @@ use crate::types::PanslopConfig;
 
 pub mod analyser;
 pub mod ingress;
+pub mod repo;
 pub mod types;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -99,11 +100,12 @@ async fn main() -> color_eyre::Result<()> {
         Commands::GHIngress { config, db } => ingress::ingress_gh(config, db).await?,
         Commands::RedditIngress { config, db } => ingress::ingress_reddit(config, db).await?,
         Commands::Analyse { config, db } => analyser::analyse_all(config, db).await?,
-        Commands::AnalyseOne { config, repo } => {
+        Commands::AnalyseOne { config, repo: _ } => {
             let config_str = std::fs::read_to_string(config)?;
-            let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+            let _config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-            analyser::analyse_one(&config_parsed, &repo, true, None, None).await?;
+            todo!()
+            // analyser::analyse_one(&config_parsed, &repo, true, None, None).await?;
         }
         Commands::UpdateStats { config: _, db: _ } => todo!(),
         Commands::Version {} => println!(
