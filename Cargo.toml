@@ -18,6 +18,8 @@ octocrab = "0.54.0"
 regex = "1.13.0"
 regex-cache = "0.2.1"
 reqwest = "0.13.4"
+reqwest-middleware = { version = "0.5.2", features = ["http2", "json", "rustls"] }
+reqwest-retry = "0.9.1"
 roux = { version = "2.2.15" }
 rustls = { version = "0.23.42", features = ["aws-lc-rs"] }
 serde = { version = "1.0.228", features = ["derive"] }

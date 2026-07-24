@@ -43,7 +43,8 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
         r#"
             SELECT
         id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src
-            FROM slop;
+            FROM slop
+            ORDER BY RANDOM();
         "#
     )
     .fetch_all(&db)

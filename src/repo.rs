@@ -6,6 +6,9 @@
 use std::{fs, io, path::PathBuf};
 
 use log::info;
+use reqwest::Client;
+use reqwest_middleware::ClientBuilder;
+use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use subprocess::Exec;
 use tempfile::TempDir;
 
@@ -50,7 +53,20 @@ impl GhRemoteRepo {
     }
 
     pub async fn exists(&self) -> color_eyre::Result<bool> {
-        let client = reqwest::Client::builder().user_agent("Mozilla/5.0 (compatible; Panslopticon-Update/{}; +https://codeberg.org/melyoung/panslopticon)").build()?;
+        let user_agent = format!(
+            "Mozilla/5.0 (compatible; Panslopticon-Update/{}; +https://codeberg.org/melyoung/panslopticon)",
+            VERSION
+        );
+        let policy = ExponentialBackoff::builder().build_with_max_retries(5);
+
+        // original reqwest client
+        let reqwest_client = Client::builder().user_agent(user_agent).build()?;
+        // middleware client
+        let client = ClientBuilder::new(reqwest_client)
+            .with(RetryTransientMiddleware::new_with_policy(policy))
+            .build();
+
+        // let client = reqwest::Client::builder().user_agent(user_agent).build()?;
         let status = client.head(&self.url).send().await?;
         Ok(status.status().is_success())
     }
