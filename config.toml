@@ -83,16 +83,16 @@ subreddits = [
     "rust", "zig", "typescript", "programming", "selfhosted", "fpga"
 ]
 
+# Number of milliseconds to wait between GitHub HTTP HEAD requests
+gh_http_head_wait_ms = 500
+
 # Score calculation
 [scoring]
 # Each AI commit gains this many points. That total score is then divided by the total number of commits in
 # the repo (to normalise it)
 ai_commit = 50.0
-
 readme_signal = 5.0
-
 emoji = 1.0
-
 emdash = 5.0
 
 # A single AI file that is not hidden
@@ -103,8 +103,7 @@ ai_file_hidden = 100.0
 
 # This is high because it needs to weigh against the other scores, which are applied per commit
 excessively_long_readme = 10.0
-
 excessively_long_commit = 0.25
 
 # !! The all important threshold to decide if a project is slop or not !!
-threshold = 100
+threshold = 95

@@ -5,10 +5,11 @@
 
 use std::{fs, io, path::PathBuf};
 
-use eyre::eyre;
 use log::info;
 use subprocess::Exec;
 use tempfile::TempDir;
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// A remote GitHub repo
 pub struct GhRemoteRepo {
@@ -49,7 +50,7 @@ impl GhRemoteRepo {
     }
 
     pub async fn exists(&self) -> color_eyre::Result<bool> {
-        let client = reqwest::Client::new();
+        let client = reqwest::Client::builder().user_agent("Mozilla/5.0 (compatible; Panslopticon-Update/{}; +https://codeberg.org/melyoung/panslopticon)").build()?;
         let status = client.head(&self.url).send().await?;
         Ok(status.status().is_success())
     }

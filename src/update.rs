@@ -83,8 +83,9 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
 
         // wait for HIDDEN(!) rate limits
         info!("Waiting for rate limit...");
-        // TODO: make this configurable
-        std::thread::sleep(Duration::from_secs(1));
+        std::thread::sleep(Duration::from_millis(
+            config_parsed.ingress.gh_http_head_wait_ms,
+        ));
     }
 
     Ok(())

@@ -65,6 +65,7 @@ pub struct ConfigIngress {
     pub subreddits: Vec<String>,
     pub gh_min_stars: u32,
     pub gh_date_cutoff: String,
+    pub gh_http_head_wait_ms: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
