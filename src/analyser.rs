@@ -206,7 +206,10 @@ pub async fn update_full_text(
 
         // otherwise, we can add to the database
         let actual_path = path.file_name().unwrap().to_str().unwrap();
-        let contents = fs::read_to_string(path).unwrap();
+        let Ok(contents) = fs::read_to_string(path) else {
+            warn!("Failed to read file: {}", path_str);
+            continue;
+        };
 
         sqlx::query!(
             "INSERT INTO full_text(slop_id, file, text) VALUES (?, ?, ?);",
