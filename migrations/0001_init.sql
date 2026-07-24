@@ -1,5 +1,5 @@
 -- Ingress queue
-CREATE TABLE ingress(
+CREATE TABLE IF NOT EXISTS ingress(
     id INTEGER PRIMARY KEY NOT NULL UNIQUE,
     url TEXT NOT NULL UNIQUE,
     date_added TEXT NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE ingress(
 );
 
 -- Confirmed slop
-CREATE TABLE slop(
+CREATE TABLE IF NOT EXISTS slop(
     id INTEGER PRIMARY KEY NOT NULL,
     url TEXT NOT NULL,
     date_added TEXT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE slop(
 );
 
 -- Considered before, but not slop; so we don't check things twice
-CREATE TABLE not_slop(
+CREATE TABLE IF NOT EXISTS not_slop(
     id INTEGER PRIMARY KEY NOT NULL,
     url TEXT NOT NULL,
     date_added TEXT NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE not_slop(
 );
 
 -- Github metrics
-CREATE TABLE gh_metrics(
+CREATE TABLE IF NOT EXISTS gh_metrics(
     slop_id INTEGER PRIMARY KEY NOT NULL,
     date TEXT NOT NULL,
     stars INTEGER NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE gh_metrics(
 );
 
 -- List of detected agents in a repo
-CREATE TABLE agents(
+CREATE TABLE IF NOT EXISTS agents(
     slop_id INTEGER NOT NULL,
     agent TEXT NOT NULL,
 
@@ -47,5 +47,5 @@ CREATE TABLE agents(
 );
 
 -- Indices
-CREATE INDEX not_slop_url_idx ON not_slop(url);
-CREATE INDEX slop_url_idx ON slop(url);
+CREATE INDEX IF NOT EXISTS not_slop_url_idx ON not_slop(url);
+CREATE INDEX IF NOT EXISTS slop_url_idx ON slop(url);

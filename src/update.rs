@@ -10,7 +10,7 @@ use log::{info, warn};
 use sqlx::SqlitePool;
 
 use crate::{
-    analyser,
+    analyser::{self, update_full_text},
     repo::GhRemoteRepo,
     types::{IngressItem, PanslopConfig, SlopItem},
 };
@@ -68,50 +68,22 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
             continue;
         }
 
-        // assuming this is filled out now
-
-        // check if we're missing a record of the recorded agents (we forgot to do this in early
+        // check if we're missing full text (we forgot to do this in early
         // versions)
-        // let has_agent_mapping =
-        //     sqlx::query!("SELECT agent FROM agents WHERE slop_id = ?;", item.id)
-        //         .fetch_optional(&db)
-        //         .await?
-        //         .is_some();
-        //
-        // if !has_agent_mapping {
-        //     warn!("Repo is missing agent mapping!");
-        //
-        //     // so, what we'll do here because i'm incredibly lazy, is delete the item and re-insert
-        //     // it lol
-        //     let local_repo = repo.clone().await?;
-        //
-        //     // this is extremely ugly, we will make our own ingress item
-        //     let ingress_item = IngressItem {
-        //         id: 999999999, // this is an imaginary item
-        //         url: item.url.clone(),
-        //         date_added: item.date_added,
-        //         origin_platform: item.origin_platform,
-        //         origin_src: item.origin_src,
-        //     };
-        //
-        //     analyser::analyse_one(
-        //         &config_parsed,
-        //         &local_repo,
-        //         false,
-        //         Some(&db),
-        //         Some(&ingress_item),
-        //     )
-        //     .await?;
-        //
-        //     sqlx::query!("DELETE FROM slop WHERE id = ?;", item.id)
-        //         .execute(&db)
-        //         .await?;
-        // }
+        let has_full_text = sqlx::query!("SELECT * FROM full_text WHERE slop_id = ?;", item.id)
+            .fetch_optional(&db)
+            .await?
+            .is_some();
 
-        // TODO: make this configurable
+        if !has_full_text {
+            warn!("Repo is missing full text");
+            let local_repo = repo.clone().await?;
+            update_full_text(item.id, &local_repo, &db).await?;
+        }
 
         // wait for HIDDEN(!) rate limits
         info!("Waiting for rate limit...");
+        // TODO: make this configurable
         std::thread::sleep(Duration::from_secs(1));
     }
 

@@ -10,6 +10,7 @@ use regex_cache::LazyRegex;
 use sqlx::{Pool, Sqlite, SqlitePool};
 use std::{
     collections::HashSet,
+    ffi::OsStr,
     fs,
     path::{Path, PathBuf},
 };
@@ -185,6 +186,41 @@ fn process_files(
     Ok((score, detected_agents))
 }
 
+pub async fn update_full_text(
+    id: i64,
+    repo: &GhLocalRepo,
+    db: &Pool<Sqlite>,
+) -> color_eyre::Result<()> {
+    let all_paths = repo.get_all_paths()?;
+
+    for path in &all_paths {
+        let path_str = path.file_name().unwrap().to_string_lossy().to_lowercase();
+
+        // ignore licence files, and ensure we have a markdown file
+        if path.extension().unwrap_or(OsStr::new("invalid")) != "md"
+            || path_str.contains("license")
+            || path_str.contains("licence")
+        {
+            continue;
+        }
+
+        // otherwise, we can add to the database
+        let actual_path = path.file_name().unwrap().to_str().unwrap();
+        let contents = fs::read_to_string(path).unwrap();
+
+        sqlx::query!(
+            "INSERT INTO full_text(slop_id, file, text) VALUES (?, ?, ?);",
+            id,
+            actual_path,
+            contents
+        )
+        .execute(db)
+        .await?;
+    }
+
+    Ok(())
+}
+
 /// Removes an item from the ingress queue
 async fn dequeue_item(id: i64, db: &Pool<Sqlite>) -> color_eyre::Result<()> {
     let _ = sqlx::query!("DELETE FROM ingress WHERE id = ?;", id)
@@ -273,6 +309,8 @@ pub async fn analyse_one(
             .execute(db)
             .await?;
         }
+
+        update_full_text(id, repo, db).await?;
     } else {
         info!("Repo '{}' is NOT slop", item.url);
         sqlx::query!(

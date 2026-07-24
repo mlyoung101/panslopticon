@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO full_text(slop_id, file, text) VALUES (?, ?, ?);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "17141896f1079d4102583421d378e2f27121c05f705c4c7f1dfc34e5c69b13c1"
+}
