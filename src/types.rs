@@ -51,7 +51,6 @@ pub struct NotSlopItem {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigDetect {
     pub emojis: String,
-    pub excessive_commits_thresh: u32,
     pub excessive_readme_length: u32,
     pub excessive_commit_length: u32,
     pub readme_signals: Vec<String>,
@@ -62,6 +61,7 @@ pub struct ConfigDetect {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigIngress {
     pub gh_tags: Vec<String>,
+    pub gh_tags_ham: Vec<String>,
     pub subreddits: Vec<String>,
     pub gh_min_stars: u32,
     pub gh_date_cutoff: String,
