@@ -424,13 +424,12 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
             SELECT
         id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src
             FROM slop
+            WHERE panslop_version != "0.6.0"
             ORDER BY RANDOM();
         "#
     )
     .fetch_all(&db)
     .await?;
-
-    let trans = db.begin().await?;
 
     for item in &slop {
         info!("Try checkout: {}", item.url);
@@ -443,6 +442,12 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
         let local_repo = remote_repo.clone().await?;
         let (new_score, _) = calculate_score(&config_parsed, &local_repo).await?;
+
+        // edge case lol
+        if new_score <= 0.01 {
+            continue;
+        }
+
         sqlx::query!(
             "UPDATE slop SET score = ? WHERE id = ?;",
             new_score,
@@ -450,28 +455,35 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
         )
         .execute(&db)
         .await?;
+
+        sqlx::query!(
+            "UPDATE slop SET panslop_version = ? WHERE id = ?;",
+            VERSION,
+            item.id
+        )
+        .execute(&db)
+        .await?;
     }
 
-    let rows_affected = sqlx::query!(
-        "DELETE FROM slop WHERE score < ?;",
-        config_parsed.scoring.threshold
-    )
-    .execute(&db)
-    .await?
-    .rows_affected();
-
-    warn!(
-        "Deleted {} slop items (original count was {})",
-        rows_affected,
-        &slop.len()
-    );
-
     if Confirm::new()
-        .with_prompt("Is this okay to commit?")
+        .with_prompt("Alright, shall we nuke the old data?")
         .interact()?
     {
         info!("Your funeral...");
-        trans.commit().await?;
+
+        let rows_affected = sqlx::query!(
+            "DELETE FROM slop WHERE score < ?;",
+            config_parsed.scoring.threshold
+        )
+        .execute(&db)
+        .await?
+        .rows_affected();
+
+        warn!(
+            "Deleted {} slop items (original count was {})",
+            rows_affected,
+            &slop.len()
+        );
 
         info!("Cleanup deleted full_text");
         let full_text_removed =
@@ -481,8 +493,7 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 .rows_affected();
         info!("Removed {} full text items", full_text_removed);
     } else {
-        info!("Okay, we won't commit it");
-        trans.rollback().await?;
+        info!("Okay, we won't do that.");
     }
 
     Ok(())

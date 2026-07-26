@@ -30,6 +30,16 @@ enum Commands {
         db: PathBuf,
     },
 
+    /// Finds "ham" - good, non AI data
+    #[command()]
+    HamIngress {
+        /// Config TOML path
+        config: PathBuf,
+
+        /// Database path
+        db: PathBuf,
+    },
+
     /// Analyse all previously ingressed data
     #[command()]
     Analyse {
@@ -108,6 +118,7 @@ async fn main() -> color_eyre::Result<()> {
         }
         Commands::Cleanup { config, db } => analyser::cleanup_all(config, db).await?,
         Commands::UpdateStats { config, db } => update::update_all(config, db).await?,
+        Commands::HamIngress { config, db } => ingress::ingress_ham(config, db).await?,
         Commands::Version {} => println!(
             "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://forgejo.mlyoung.cool/mel/panslopticon",
             VERSION

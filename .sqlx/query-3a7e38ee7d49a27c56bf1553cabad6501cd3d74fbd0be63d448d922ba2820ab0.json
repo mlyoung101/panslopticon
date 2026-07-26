@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE slop SET panslop_version = ? WHERE id = ?;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3a7e38ee7d49a27c56bf1553cabad6501cd3d74fbd0be63d448d922ba2820ab0"
+}
