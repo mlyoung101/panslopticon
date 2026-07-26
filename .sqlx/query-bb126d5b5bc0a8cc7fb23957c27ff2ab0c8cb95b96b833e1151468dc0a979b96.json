@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE slop SET score = ? WHERE id = ?;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "bb126d5b5bc0a8cc7fb23957c27ff2ab0c8cb95b96b833e1151468dc0a979b96"
+}

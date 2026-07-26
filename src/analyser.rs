@@ -4,6 +4,7 @@
 // was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use chrono::Utc;
+use dialoguer::Confirm;
 use indicatif::ProgressIterator;
 use regex::Regex;
 use regex_cache::LazyRegex;
@@ -20,7 +21,7 @@ use log::{debug, info, warn};
 
 use crate::{
     repo::{GhLocalRepo, GhRemoteRepo},
-    types::{IngressItem, PanslopConfig},
+    types::{IngressItem, PanslopConfig, SlopItem},
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -88,6 +89,10 @@ fn process_readme(config: &PanslopConfig, repo: &GhLocalRepo) -> color_eyre::Res
         score += (emojis as f64) * config.scoring.emoji;
         score += (emdashes as f64) * config.scoring.emdash;
         score += (signals as f64) * config.scoring.readme_signal;
+
+        // normalise to readme length
+        score /= readme.len() as f64;
+        score *= config.scoring.readme_multiplier;
 
         Ok(score)
     } else {
@@ -232,13 +237,10 @@ async fn dequeue_item(id: i64, db: &Pool<Sqlite>) -> color_eyre::Result<()> {
     Ok(())
 }
 
-pub async fn analyse_one(
+pub async fn calculate_score(
     config: &PanslopConfig,
     repo: &GhLocalRepo,
-    debug: bool,
-    maybe_db: Option<&Pool<Sqlite>>,
-    maybe_item: Option<&IngressItem>,
-) -> color_eyre::Result<()> {
+) -> color_eyre::Result<(f64, HashSet<String>)> {
     let mut score = process_readme(config, repo)?;
     info!("Score after processing readme: {}", score);
 
@@ -250,6 +252,18 @@ pub async fn analyse_one(
     score += files_score;
     detected_agents.extend(files_agents);
     info!("Score after processing all files: {}", score);
+
+    Ok((score, detected_agents))
+}
+
+pub async fn analyse_one(
+    config: &PanslopConfig,
+    repo: &GhLocalRepo,
+    debug: bool,
+    maybe_db: Option<&Pool<Sqlite>>,
+    maybe_item: Option<&IngressItem>,
+) -> color_eyre::Result<()> {
+    let (score, detected_agents) = calculate_score(config, repo).await?;
 
     // don't do SQL stuff in debug mode
     if debug {
@@ -386,6 +400,89 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 break;
             }
         }
+    }
+
+    Ok(())
+}
+
+pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
+    info!(
+        "Start cleanup of all slop items to match new scoring. Config: {}, DB: {}",
+        config.to_string_lossy(),
+        db.to_string_lossy()
+    );
+
+    let config_str = std::fs::read_to_string(config)?;
+    let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+
+    let url = format!("sqlite://{}", db.to_string_lossy());
+    let db = SqlitePool::connect(&url).await?;
+
+    let slop = sqlx::query_as!(
+        SlopItem,
+        r#"
+            SELECT
+        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src
+            FROM slop
+            ORDER BY RANDOM();
+        "#
+    )
+    .fetch_all(&db)
+    .await?;
+
+    let trans = db.begin().await?;
+
+    for item in &slop {
+        info!("Try checkout: {}", item.url);
+        let remote_repo = GhRemoteRepo::new(item.url.clone());
+        if !remote_repo.exists().await? {
+            warn!("Repo {} no longer exists", remote_repo.url);
+            // don't remove, and don't clone, keep the old score
+            continue;
+        }
+
+        let local_repo = remote_repo.clone().await?;
+        let (new_score, _) = calculate_score(&config_parsed, &local_repo).await?;
+        sqlx::query!(
+            "UPDATE slop SET score = ? WHERE id = ?;",
+            new_score,
+            item.id
+        )
+        .execute(&db)
+        .await?;
+    }
+
+    let rows_affected = sqlx::query!(
+        "DELETE FROM slop WHERE score < ?;",
+        config_parsed.scoring.threshold
+    )
+    .execute(&db)
+    .await?
+    .rows_affected();
+
+    warn!(
+        "Deleted {} slop items (original count was {})",
+        rows_affected,
+        &slop.len()
+    );
+
+    if Confirm::new()
+        .with_prompt("Is this okay to commit?")
+        .interact()?
+    {
+        info!("Your funeral...");
+        trans.commit().await?;
+
+        info!("Cleanup deleted full_text");
+        let full_text_removed =
+            sqlx::query!("delete from full_text where slop_id not in (select id from slop);")
+                .execute(&db)
+                .await?
+                .rows_affected();
+        info!("Removed {} full text items", full_text_removed);
+    } else {
+        info!("Okay, we won't commit it");
+        trans.rollback().await?;
     }
 
     Ok(())

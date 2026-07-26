@@ -48,7 +48,7 @@ pub struct NotSlopItem {
 
 ///
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigDetect {
     pub emojis: String,
     pub excessive_commits_thresh: u32,
@@ -59,7 +59,7 @@ pub struct ConfigDetect {
     pub files: HashMap<String, Vec<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigIngress {
     pub gh_tags: Vec<String>,
     pub subreddits: Vec<String>,
@@ -68,7 +68,7 @@ pub struct ConfigIngress {
     pub gh_http_head_wait_ms: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigScoring {
     pub ai_commit: f64,
     pub readme_signal: f64,
@@ -79,9 +79,10 @@ pub struct ConfigScoring {
     pub threshold: f64,
     pub ai_file: f64,
     pub ai_file_hidden: f64,
+    pub readme_multiplier: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PanslopConfig {
     pub detect: ConfigDetect,
     pub ingress: ConfigIngress,

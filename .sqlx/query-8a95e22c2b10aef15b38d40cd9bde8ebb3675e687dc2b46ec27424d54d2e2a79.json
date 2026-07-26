@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from full_text where slop_id not in (select id from slop);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "8a95e22c2b10aef15b38d40cd9bde8ebb3675e687dc2b46ec27424d54d2e2a79"
+}

@@ -35,7 +35,7 @@ readme_signals = [
 
 # Regexes to detect AI coding tools in Git commits
 [detect.commit]
-claude = ["(?i)Claude (Code|Opus|Fable)", "(?i)noreply@anthropic.com", "(?i)[0-9]+M context", "(?i)Claude-Session"]
+claude = ["(?i)Claude.*(Code|Opus|Fable|Sonnet|Haiku)", "(?i)noreply@anthropic.com", "(?i)[0-9]+M context", "(?i)Claude-Session"]
 copilot = ["(?i)Co-(authored|created|developed).*Copilot", "(?i)copilot@github.com", "175728472+Copilot"]
 codex = ["(?i)OpenAI Codex", "(?i).*@openai.com"]
 # these are from:
@@ -71,7 +71,7 @@ generic = ["AGENTS.md", "SKILLS.md", "AI_GUIDE.md", ".agents", ".agent"]
 gh_tags = [
     "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas", "fastapi",
     "webapp", "fpga", "asic", "chip", "python", "javascript", "cpp", "gpu", "library", "c", "webgpu", "java",
-    "kotlin"
+    "kotlin", "flask", "zig"
 ]
 gh_min_stars = 2
 # repo must be created after this date to be considered slop
@@ -86,17 +86,26 @@ subreddits = [
 # Number of milliseconds to wait between GitHub HTTP HEAD requests
 gh_http_head_wait_ms = 500
 
+# GitHub tags to source ham (good data) from
+gh_tags_ham = [
+    "rust",  "react", "webapp", "fpga", "asic", "chip", "python", "javascript", "cpp", "gpu", "library", "c",
+    "webgpu", "java", "kotlin", "flask", "zig"
+]
+
 # Score calculation
 [scoring]
 # Each AI commit gains this many points. That total score is then divided by the total number of commits in
 # the repo (to normalise it)
 ai_commit = 50.0
-readme_signal = 5.0
-emoji = 1.0
-emdash = 5.0
+
+readme_signal = 20.0
+emoji = 10.0
+emdash = 10.0
+# factor multiply the README score by, this is indicative of the length of an "average" README
+readme_multiplier = 1000.0
 
 # A single AI file that is not hidden
-ai_file = 20.0
+ai_file = 33.334
 
 # An AI file that **is** hidden, means the author intentionally is trying to hide it from us...
 ai_file_hidden = 100.0
@@ -106,4 +115,4 @@ excessively_long_readme = 10.0
 excessively_long_commit = 0.25
 
 # !! The all important threshold to decide if a project is slop or not !!
-threshold = 95
+threshold = 100

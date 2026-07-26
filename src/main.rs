@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use env_logger::{Builder, Env};
 
-use crate::types::PanslopConfig;
+use crate::{repo::GhRemoteRepo, types::PanslopConfig};
 
 pub mod analyser;
 pub mod ingress;
@@ -30,16 +30,6 @@ enum Commands {
         db: PathBuf,
     },
 
-    /// Ingress from Reddit
-    #[command()]
-    RedditIngress {
-        /// Config TOML path
-        config: PathBuf,
-
-        /// Database path
-        db: PathBuf,
-    },
-
     /// Analyse all previously ingressed data
     #[command()]
     Analyse {
@@ -50,19 +40,29 @@ enum Commands {
         db: PathBuf,
     },
 
-    /// Analyse a single repository
+    /// Analyse a single repository (for debugging)
     #[command()]
     AnalyseOne {
         /// Config TOML path
         config: PathBuf,
 
-        /// Repo path
-        repo: PathBuf,
+        /// Repo URL
+        repo: String,
     },
 
     /// Update statistics about existing repositories
     #[command()]
     UpdateStats {
+        /// Config TOML path
+        config: PathBuf,
+
+        /// Database path
+        db: PathBuf,
+    },
+
+    /// Cleans up the slop database when the scoring algorithm changes
+    #[command()]
+    Cleanup {
         /// Config TOML path
         config: PathBuf,
 
@@ -99,18 +99,17 @@ async fn main() -> color_eyre::Result<()> {
 
     match args.command {
         Commands::GHIngress { config, db } => ingress::ingress_gh(config, db).await?,
-        Commands::RedditIngress { config, db } => ingress::ingress_reddit(config, db).await?,
         Commands::Analyse { config, db } => analyser::analyse_all(config, db).await?,
-        Commands::AnalyseOne { config, repo: _ } => {
+        Commands::AnalyseOne { config, repo } => {
             let config_str = std::fs::read_to_string(config)?;
-            let _config_parsed: PanslopConfig = toml::from_str(&config_str)?;
-
-            todo!()
-            // analyser::analyse_one(&config_parsed, &repo, true, None, None).await?;
+            let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+            let local_repo = GhRemoteRepo::new(repo).clone().await?;
+            analyser::analyse_one(&config_parsed, &local_repo, true, None, None).await?;
         }
+        Commands::Cleanup { config, db } => analyser::cleanup_all(config, db).await?,
         Commands::UpdateStats { config, db } => update::update_all(config, db).await?,
         Commands::Version {} => println!(
-            "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://codeberg.org/melyoung/panslopticon",
+            "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://forgejo.mlyoung.cool/mel/panslopticon",
             VERSION
         ),
     };
