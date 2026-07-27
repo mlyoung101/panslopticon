@@ -95,8 +95,8 @@ gh_tags_ham = [
 # the repo (to normalise it)
 ai_commit = 50.0
 
-readme_signal = 20.0
-emoji = 10.0
+readme_signal = 30.0
+emoji = 15.0
 emdash = 10.0
 # factor multiply the README score by, this is indicative of the length of an "average" README
 readme_multiplier = 2000.0
