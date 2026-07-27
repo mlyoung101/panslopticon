@@ -9,7 +9,7 @@ use log::info;
 use reqwest::Client;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
-use subprocess::Exec;
+use subprocess::{Exec, Redirection};
 use tempfile::TempDir;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -45,8 +45,8 @@ impl GhRemoteRepo {
             .arg(format!("{}.git", self.url))
             .arg(tempdir.path().to_string_lossy().to_string())
             .checked()
-            // .stdout(Redirection::Null)
-            // .stderr(Redirection::Null)
+            .stdout(Redirection::Null)
+            .stderr(Redirection::Null)
             .join()?;
 
         Ok(GhLocalRepo { path: tempdir })

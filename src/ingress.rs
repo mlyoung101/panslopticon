@@ -171,7 +171,13 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
             let remote = GhRemoteRepo::new(url.to_string());
             let local = remote.clone().await?;
 
-            let (score, _) = calculate_score(&config_parsed, &local).await?;
+            let Ok((score, _)) = calculate_score(&config_parsed, &local).await else {
+                warn!(
+                    "Failed to calculate score for ham repo: {}",
+                    url.to_string()
+                );
+                continue;
+            };
 
             if score <= 65.0 {
                 info!("Repo {} is confirmed ham, processing full text", url);
