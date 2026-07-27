@@ -1,3 +1,4 @@
+using TextAnalysis: serialize
 # Copyright (c) 2026 Mel Young.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
@@ -21,36 +22,17 @@ function load_data()
     ham_linux_docs = read("ham/LINUX_DOCS.md", String)
     println("Loaded.")
 
-    println("Tokenizing...")
-    ham = []
-    push!(ham, tokenize(ham_linux_docs))
-    for file in ham_db.text
-        append!(ham, tokenize(file))
-    end
-
-    spam = []
-    for file in spam_db.text
-        append!(spam, tokenize(file))
-    end
-
-    # TODO: zstd?
-    serialize("data/spam.dat", spam)
-    serialize("data/ham.dat", ham)
+    spam = spam_db.text
+    ham = ham_db.text
+    push!(ham, ham_linux_docs)
 
     return spam, ham
 end
 
 function train()
-    if isfile("data/ham.dat") && isfile("data/spam.dat")
-        println("Deserialise existing data")
-        spam = deserialize("data/spam.dat")
-        ham = deserialize("data/ham.dat")
-    else
-        spam, ham = load_data()
-    end
-
-    println("$(length(spam)) spam tokens")
-    println("$(length(ham)) ham tokens")
+    spam, ham = load_data()
+    println("$(length(spam)) spam files")
+    println("$(length(ham)) ham files")
 
     # split test and train set with Julia's cool new MLDataUtils
     # refs:
@@ -58,6 +40,27 @@ function train()
     # https://github.com/JuliaML/MLDataUtils.jl
     train_ham, test_ham = splitobs(ham; at=0.8)
     train_spam, test_spam = splitobs(spam; at=0.8)
+
+    classifier = NaiveBayesClassifier([:spam, :ham])
+
+    println("Training spam...")
+    for file in train_spam
+        TextAnalysis.fit!(classifier, file, :spam)
+    end
+
+    println("Training ham...")
+    for file in train_ham
+        TextAnalysis.fit!(classifier, file, :ham)
+    end
+
+    println("Serializing...")
+    serialize("data/classifier.dat", classifier)
+    serialize("data/train_ham.dat", train_ham)
+    serialize("data/train_spam.dat", train_spam)
+    serialize("data/test_ham.dat", test_ham)
+    serialize("data/test_spam.dat", test_spam)
+
+    println("Done.")
 end
 
 train()
