@@ -444,7 +444,7 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
         let (new_score, _) = calculate_score(&config_parsed, &local_repo).await?;
 
         // edge case lol
-        if new_score <= 0.01 {
+        if new_score <= 0.01 || new_score.is_nan() {
             continue;
         }
 

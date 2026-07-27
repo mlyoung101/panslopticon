@@ -3,7 +3,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 // was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::{fmt::format, path::PathBuf, time::Duration};
+use std::{path::PathBuf, time::Duration};
 
 use chrono::{DateTime, Utc};
 use log::{info, warn};
@@ -11,40 +11,22 @@ use sqlx::{Pool, Sqlite, SqlitePool};
 
 use crate::{analyser::calculate_score, repo::GhRemoteRepo, types::PanslopConfig};
 
-pub async fn ingress_reddit(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
-    info!(
-        "Start Reddit ingress process. Config: {}, DB: {}",
-        config.to_string_lossy(),
-        db.to_string_lossy()
-    );
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-    let config_str = std::fs::read_to_string(config)?;
-    let _config_parsed: PanslopConfig = toml::from_str(&config_str)?;
-
-    // for sub_name in config_parsed.ingress.subreddits {
-    //     info!("Checking: {}", sub_name);
-    //
-    //     let sub = Subreddit::new(&sub_name);
-    //
-    //     let new = sub.latest(10, None).await?;
-    //
-    //     println!("{:?}", new);
-    //     break;
-    // }
-
-    Ok(())
-}
-
-/// Checks if the given URL is in the not slop table
+/// Checks if the given URL is in the not slop table (or the ham table)
 async fn is_definitely_not_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::Result<bool> {
-    let result = sqlx::query!(
+    let not_slop_result = sqlx::query!(
         r#"SELECT COUNT(*) AS count FROM not_slop WHERE url = ?;"#,
         url
     )
     .fetch_one(db)
     .await?;
 
-    Ok(result.count > 0)
+    let ham_result = sqlx::query!(r#"SELECT COUNT(*) AS count FROM ham WHERE url = ?;"#, url)
+        .fetch_one(db)
+        .await?;
+
+    Ok(not_slop_result.count > 0 || ham_result.count > 0)
 }
 
 /// Checks if the given URL is already in the slop table
@@ -155,13 +137,15 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
     let url = format!("sqlite://{}", db.to_string_lossy());
     let db = SqlitePool::connect(&url).await?;
 
-    for topic in &config_parsed.ingress.gh_tags {
+    for topic in &config_parsed.ingress.gh_tags_ham {
         info!("Query GitHub topic: {}", topic);
+        let page = rand::random_range(1..25);
 
         let result = api
             .search()
             .repositories(&format!("topic:{} stars:>90 created:<2022", topic))
             .sort("stars")
+            .page(page as u32)
             .send()
             .await?;
 
@@ -174,24 +158,48 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 continue;
             }
 
-            // FIXME: check if it's already ham
+            if is_definitely_not_slop(&url.to_string(), &db).await? {
+                warn!("Repo {} already recorded, skipping", url);
+                continue;
+            }
 
             info!("Confirming repo {} is not slop", url.to_string());
-            let remote = GhRemoteRepo::new(format!("{}.git", url.to_string()));
+            let remote = GhRemoteRepo::new(url.to_string());
             let local = remote.clone().await?;
 
-            let (score, detected_agents) = calculate_score(&config_parsed, &local).await?;
+            let (score, _) = calculate_score(&config_parsed, &local).await?;
 
-            if score <= 50.0 {
+            if score <= 65.0 {
                 info!(
                     "Repo {} is confirmed ham, processing full text",
                     url.to_string()
                 );
 
-                // TODO
+                sqlx::query!(
+                r#"
+                    INSERT INTO ham (url, date_added, score, panslop_version, origin_platform, origin_src)
+                    VALUES (?, ?, ?, ?, ?, ?);
+                "#,
+                    url.to_string(),
+                    now,
+                    score,
+                    VERSION,
+                    "github",
+                    format!("tag-{}", topic)
+                )
+                .execute(&db)
+                .await?;
+
+                // what was the ID we just inserted?
+                let id = sqlx::query!("SELECT id FROM ham ORDER BY id DESC;")
+                    .fetch_one(&db)
+                    .await?
+                    .id;
+
+                // TODO insert full text
             } else {
                 warn!(
-                    "Ham repo {} is in fact slop (score={}), skipping",
+                    "Ham repo {} is in fact slop!! (score={}), skipping",
                     url.to_string(),
                     score
                 );
