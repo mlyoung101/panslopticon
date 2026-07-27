@@ -9,7 +9,11 @@ use chrono::{DateTime, Utc};
 use log::{info, warn};
 use sqlx::{Pool, Sqlite, SqlitePool};
 
-use crate::{analyser::calculate_score, repo::GhRemoteRepo, types::PanslopConfig};
+use crate::{
+    analyser::{calculate_score, update_full_text},
+    repo::GhRemoteRepo,
+    types::PanslopConfig,
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -196,7 +200,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                     .await?
                     .id;
 
-                // TODO insert full text
+                update_full_text(id, &local, &db, true).await?;
             } else {
                 warn!(
                     "Ham repo {} is in fact slop!! (score={}), skipping",

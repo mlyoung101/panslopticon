@@ -79,7 +79,7 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
         if !has_full_text {
             warn!("Repo is missing full text");
             let local_repo = repo.clone().await?;
-            update_full_text(item.id, &local_repo, &db).await?;
+            update_full_text(item.id, &local_repo, &db, false).await?;
         }
 
         // wait for HIDDEN(!) rate limits

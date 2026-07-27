@@ -191,10 +191,12 @@ fn process_files(
     Ok((score, detected_agents))
 }
 
+/// ham: If we should insert into the spam or ham database
 pub async fn update_full_text(
     id: i64,
     repo: &GhLocalRepo,
     db: &Pool<Sqlite>,
+    ham: bool,
 ) -> color_eyre::Result<()> {
     let all_paths = repo.get_all_paths()?;
 
@@ -216,14 +218,25 @@ pub async fn update_full_text(
             continue;
         };
 
-        sqlx::query!(
-            "INSERT INTO full_text(slop_id, file, text) VALUES (?, ?, ?);",
-            id,
-            actual_path,
-            contents
-        )
-        .execute(db)
-        .await?;
+        if ham {
+            sqlx::query!(
+                "INSERT INTO ham_full_text(id, file, text) VALUES (?, ?, ?);",
+                id,
+                actual_path,
+                contents
+            )
+            .execute(db)
+            .await?;
+        } else {
+            sqlx::query!(
+                "INSERT INTO full_text(slop_id, file, text) VALUES (?, ?, ?);",
+                id,
+                actual_path,
+                contents
+            )
+            .execute(db)
+            .await?;
+        }
     }
 
     Ok(())
@@ -327,7 +340,7 @@ pub async fn analyse_one(
             .await?;
         }
 
-        update_full_text(id, repo, db).await?;
+        update_full_text(id, repo, db, false).await?;
     } else {
         info!("Repo '{}' is NOT slop", item.url);
         sqlx::query!(
@@ -463,37 +476,6 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
         )
         .execute(&db)
         .await?;
-    }
-
-    if Confirm::new()
-        .with_prompt("Alright, shall we nuke the old data?")
-        .interact()?
-    {
-        info!("Your funeral...");
-
-        let rows_affected = sqlx::query!(
-            "DELETE FROM slop WHERE score < ?;",
-            config_parsed.scoring.threshold
-        )
-        .execute(&db)
-        .await?
-        .rows_affected();
-
-        warn!(
-            "Deleted {} slop items (original count was {})",
-            rows_affected,
-            &slop.len()
-        );
-
-        info!("Cleanup deleted full_text");
-        let full_text_removed =
-            sqlx::query!("delete from full_text where slop_id not in (select id from slop);")
-                .execute(&db)
-                .await?
-                .rows_affected();
-        info!("Removed {} full text items", full_text_removed);
-    } else {
-        info!("Okay, we won't do that.");
     }
 
     Ok(())
