@@ -28,23 +28,37 @@ sqlx migrate run
 ```
 
 ## Architecture
+### Terminology
+**Slop** refers to poor-quality, entirely AI-generated repos; which is what we are aiming to detect. It's also
+referred to as "spam" in some places in the code (because we're building a classifier in the classic
+"spam"/"ham" sense).
+
+**Ham** refers to good-quality, human-authored repos of good standing. This is what we used to train the
+classifier on the opposite of slop.
+
 ### Detection methodology
-Detection is configured through `config.toml`, though a number of regexes and other heuristics.
+Detection is configured through `config.toml`, though a number of regexes and other heuristics. The scoring
+system looks at the README contents, files in the repo (including gitignored files!) and commit authorship.
+All of these are considered "signals", it takes a number of signals to increase the score significantly.
 
-Scores are calculated based on the heuristics. Once a threshold is hit, the repo is considered slop.
+Once the score is above a configurable threshold, the repo is considered slop.
 
-### Tasks
-**IngressGitHub:** Runs once every 3 hours. Scrapes GitHub trending page for repositories made since January 1
-2024 for investigation.
+### Daily tasks
+**IngressGitHub:** Runs once every 3 hours. Uses the GitHub API to query various topics for repos, sorted by
+most recently updated, with greater than 2 stars.
 
-**IngressReddit:** Runs once per day at 7am AEDT. Scrapes various subreddits by new to locate slop.
+**IngressHam:** Uses the GitHub API to query topics for repos, sorted by most stars, with >90 stars and
+created before 2022; picking a random page.
 
-**Analyse:** Runs once every 6 hours. Visits the ingress queue and determines if repositories are actually
-slop or not. If yes, they get added to the slop table and catalogued. If no, they get added to the "not_slop"
-table and will not be visited again.
+**Analyse:** Runs once every day at 10pm AEDT. Visits the ingress queue and determines if repositories are
+actually slop or not. If yes, they get added to the slop table and catalogued (e.g. by having their full text
+from all files archived). If no, they get added to the "not_slop" table and will not be visited again.
 
-**UpdateStats:** Runs once per day at 11pm AEDT. Looks through all existing slop repositories to check if they
+**UpdateStats:** Runs once per day at 2pm AEDT. Looks through all existing slop repositories to check if they
 still exist and updates their stars and forks count.
+
+## Spam/ham classifier
+A classifier is written in Julia to attempt to distinguish between human-written READMEs and slop READMEs.
 
 ## Licence
 Copyright (c) 2026 Mel Young. Available under the MPL 2.0.
