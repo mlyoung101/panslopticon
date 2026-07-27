@@ -167,17 +167,14 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 continue;
             }
 
-            info!("Confirming repo {} is not slop", url.to_string());
+            info!("Confirming repo {} is not slop", url);
             let remote = GhRemoteRepo::new(url.to_string());
             let local = remote.clone().await?;
 
             let (score, _) = calculate_score(&config_parsed, &local).await?;
 
             if score <= 65.0 {
-                info!(
-                    "Repo {} is confirmed ham, processing full text",
-                    url.to_string()
-                );
+                info!("Repo {} is confirmed ham, processing full text", url);
 
                 sqlx::query!(
                 r#"
@@ -204,8 +201,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
             } else {
                 warn!(
                     "Ham repo {} is in fact slop!! (score={}), skipping",
-                    url.to_string(),
-                    score
+                    url, score
                 );
                 continue;
             }

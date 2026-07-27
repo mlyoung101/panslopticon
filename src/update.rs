@@ -10,9 +10,9 @@ use log::{info, warn};
 use sqlx::SqlitePool;
 
 use crate::{
-    analyser::{self, update_full_text},
+    analyser::update_full_text,
     repo::GhRemoteRepo,
-    types::{IngressItem, PanslopConfig, SlopItem},
+    types::{PanslopConfig, SlopItem},
 };
 
 pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
@@ -51,7 +51,7 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
     .await?;
 
     for item in slop {
-        info!("Update repo: {}", &item.url);
+        info!("Update repo: {}", item.url);
         let repo = GhRemoteRepo::new(item.url.clone());
 
         if repo.exists().await? {
