@@ -197,7 +197,10 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                     .await?
                     .id;
 
-                update_full_text(id, &local, &db, true).await?;
+                let Ok(_) = update_full_text(id, &local, &db, true).await else {
+                    warn!("Failed to update full text for ham repo: {}", url);
+                    continue;
+                };
             } else {
                 warn!(
                     "Ham repo {} is in fact slop!! (score={}), skipping",
