@@ -1,3 +1,4 @@
 /target
 data/*.db*
 ham/*.md
+data/*.dat

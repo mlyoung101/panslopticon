@@ -1,10 +1,13 @@
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DaemonMode = "d749ddd5-2b29-4920-8305-6ff5a704e36e"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+MLDataUtils = "cc2ba9b6-d476-5e6d-8eaf-a92d5412d41d"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 SQLite = "0aa819cd-b072-5ff4-a722-6bc24af294d9"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 TermFrequencyInverseDocumentFrequency = "2841d249-20d1-448a-8f4f-e4924d4d8a20"
 TextAnalysis = "a2db99b7-8b79-58f8-94bf-bbc811eef33d"
 WordTokenizers = "796a5d58-b03d-544a-977e-18100b691f6e"
