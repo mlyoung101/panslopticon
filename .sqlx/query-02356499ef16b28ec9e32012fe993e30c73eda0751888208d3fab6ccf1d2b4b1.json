@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            SELECT slop_id, file, text FROM full_text ORDER BY RANDOM();\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "slop_id",
+        "ordinal": 0,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "full_text",
+            "name": "slop_id"
+          }
+        }
+      },
+      {
+        "name": "file",
+        "ordinal": 1,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "full_text",
+            "name": "file"
+          }
+        }
+      },
+      {
+        "name": "text",
+        "ordinal": 2,
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "full_text",
+            "name": "text"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "02356499ef16b28ec9e32012fe993e30c73eda0751888208d3fab6ccf1d2b4b1"
+}

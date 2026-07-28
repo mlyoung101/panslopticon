@@ -5,6 +5,7 @@
 
 use chrono::Utc;
 use indicatif::ProgressIterator;
+use lingua::{Language, LanguageDetector, LanguageDetectorBuilder};
 use regex::Regex;
 use regex_cache::LazyRegex;
 use sqlx::{Pool, Sqlite, SqlitePool};
@@ -20,7 +21,7 @@ use log::{debug, info, warn};
 
 use crate::{
     repo::{GhLocalRepo, GhRemoteRepo},
-    types::{IngressItem, PanslopConfig, SlopItem},
+    types::{FullTextItem, HamFullTextItem, IngressItem, PanslopConfig, SlopItem},
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -216,6 +217,18 @@ pub async fn update_full_text(
             warn!("Failed to read file: {}", path_str);
             continue;
         };
+
+        // only accept English text
+        let language_detector = LanguageDetectorBuilder::from_all_languages().build();
+        let Some(language) = language_detector.detect_language_of(&contents) else {
+            warn!("Unable to detect language of file: {}", path_str);
+            // do not process this file
+            continue;
+        };
+        if language != Language::English {
+            warn!("File {} not in English, skipping", path_str);
+            continue;
+        }
 
         if ham {
             sqlx::query!(
@@ -419,7 +432,7 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
 pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
     info!(
-        "Start cleanup of all slop items to match new scoring. Config: {}, DB: {}",
+        "Start cleanup of all slop items to remove non-English languages. Config: {}, DB: {}",
         config.to_string_lossy(),
         db.to_string_lossy()
     );
@@ -430,51 +443,64 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
     let url = format!("sqlite://{}", db.to_string_lossy());
     let db = SqlitePool::connect(&url).await?;
 
-    let slop = sqlx::query_as!(
-        SlopItem,
-        r#"
-            SELECT
-        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src
-            FROM slop
-            WHERE panslop_version != "0.6.0"
-            ORDER BY RANDOM();
+    let language_detector = LanguageDetectorBuilder::from_all_languages().build();
+
+    {
+        let all_full_text = sqlx::query_as!(
+            FullTextItem,
+            r#"
+            SELECT slop_id, file, text FROM full_text ORDER BY RANDOM();
         "#
-    )
-    .fetch_all(&db)
-    .await?;
-
-    for item in &slop {
-        info!("Try checkout: {}", item.url);
-        let remote_repo = GhRemoteRepo::new(item.url.clone());
-        if !remote_repo.exists().await? {
-            warn!("Repo {} no longer exists", remote_repo.url);
-            // don't remove, and don't clone, keep the old score
-            continue;
-        }
-
-        let local_repo = remote_repo.clone().await?;
-        let (new_score, _) = calculate_score(&config_parsed, &local_repo).await?;
-
-        // edge case lol
-        if new_score <= 0.01 || new_score.is_nan() {
-            continue;
-        }
-
-        sqlx::query!(
-            "UPDATE slop SET score = ? WHERE id = ?;",
-            new_score,
-            item.id
         )
-        .execute(&db)
+        .fetch_all(&db)
         .await?;
 
-        sqlx::query!(
-            "UPDATE slop SET panslop_version = ? WHERE id = ?;",
-            VERSION,
-            item.id
+        let mut removed = 0;
+        for item in all_full_text.iter().progress() {
+            if let Some(language) = language_detector.detect_language_of(&item.text) {
+                if language != Language::English {
+                    sqlx::query!(
+                        "DELETE FROM full_text WHERE slop_id = ? AND file = ? AND text = ?;",
+                        item.slop_id,
+                        item.file,
+                        item.text
+                    )
+                    .execute(&db)
+                    .await?;
+                    removed += 1;
+                }
+            }
+        }
+        info!("Removed {} non-English files from slop", removed);
+    }
+
+    {
+        let all_full_text = sqlx::query_as!(
+            HamFullTextItem,
+            r#"
+            SELECT id, file, text FROM ham_full_text ORDER BY RANDOM();
+        "#
         )
-        .execute(&db)
+        .fetch_all(&db)
         .await?;
+
+        let mut removed = 0;
+        for item in all_full_text.iter().progress() {
+            if let Some(language) = language_detector.detect_language_of(&item.text) {
+                if language != Language::English {
+                    sqlx::query!(
+                        "DELETE FROM ham_full_text WHERE id = ? AND file = ? AND text = ?;",
+                        item.id,
+                        item.file,
+                        item.text
+                    )
+                    .execute(&db)
+                    .await?;
+                    removed += 1;
+                }
+            }
+        }
+        info!("Removed {} non-English files from ham", removed);
     }
 
     Ok(())

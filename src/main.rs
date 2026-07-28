@@ -70,7 +70,7 @@ enum Commands {
         db: PathBuf,
     },
 
-    /// Cleans up the slop database when the scoring algorithm changes
+    /// Runs a particular cleanup task that's hardcoded at the time, and hardcoded in
     #[command()]
     Cleanup {
         /// Config TOML path

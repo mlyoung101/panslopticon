@@ -39,11 +39,17 @@ pub struct SlopItem {
 }
 
 #[derive(Debug, FromRow, Clone)]
-pub struct NotSlopItem {
-    pub id: u64,
-    pub url: String,
-    pub date_added: chrono::DateTime<Utc>,
-    pub score: f64,
+pub struct FullTextItem {
+    pub slop_id: i64,
+    pub file: String,
+    pub text: String,
+}
+
+#[derive(Debug, FromRow, Clone)]
+pub struct HamFullTextItem {
+    pub id: i64,
+    pub file: String,
+    pub text: String,
 }
 
 ///
