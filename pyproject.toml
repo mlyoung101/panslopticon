@@ -13,10 +13,12 @@ dependencies = [
     "jupyterlab-vim>=4.1.4",
     "jupyterlab-wakatime>=0.2.0",
     "jupytext>=1.19.4",
+    "markdown>=3.10.2",
     "matplotlib>=3.11.1",
     "notebook>=7.6.0",
     "numpy>=2.5.1",
     "pandas>=3.0.5",
+    "plain-text-markdown-extention",
     "polars>=1.43.1",
     "pyarrow>=25.0.0",
     "scikit-learn>=1.9.0",
@@ -28,3 +30,6 @@ dependencies = [
 
 [tool.basedpyright]
 typeCheckingMode = "standard"
+
+[tool.uv.sources]
+plain-text-markdown-extention = { git = "https://github.com/kostyachum/python-markdown-plain-text" }

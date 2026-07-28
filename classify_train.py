@@ -2,29 +2,34 @@
 #
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import accuracy_score, log_loss
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
-import pandas as pd
 import pickle
 import sqlite3
+
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.metrics import accuracy_score, classification_report, log_loss
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from IPython import embed
 
 # based on: https://github.com/nadinejackson1/text-classification-naive-bayes/blob/main/main.ipynb
 
 
 def load_data() -> pd.DataFrame:
     conn = sqlite3.connect("data/panslop.db")
-    spam = pd.read_sql_query("SELECT text FROM full_text ORDER BY RANDOM() LIMIT 6000", conn)
-    ham = pd.read_sql_query("SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT 6000", conn)
+    spam = pd.read_sql_query(
+        "SELECT text FROM full_text ORDER BY RANDOM() LIMIT 6000", conn
+    )
+    ham = pd.read_sql_query(
+        "SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT 6000", conn
+    )
     conn.close()
 
     spam["label"] = "spam"
     ham["label"] = "ham"
 
     return pd.concat([spam, ham], ignore_index=True)
-
 
 def train():
     print("Loading data...")
@@ -38,7 +43,7 @@ def train():
     )
 
     print("Vectorising...")
-    vectorizer = TfidfVectorizer(stop_words="english", max_features=10000)
+    vectorizer = CountVectorizer(stop_words="english", max_features=10000)
     X_train_vect = vectorizer.fit_transform(X_train)
     X_test_vect = vectorizer.transform(X_test)
 
@@ -51,7 +56,16 @@ def train():
     print("Predicting...")
     y_pred = classifier.predict(X_test_vect)
 
-    print(classification_report(y_test, y_pred, target_names=["spam", "ham"]))
+    print(classification_report(y_test, y_pred))
+
+    # print("SPAM most salient:")
+    # spam_class_prob_sorted = classifier.feature_log_prob_[0, :].argsort()[::-1]
+    # print(np.take(vectorizer.get_feature_names_out(), spam_class_prob_sorted[:10]))
+    #
+    # print("HAM most salient:")
+    # ham_class_prob_sorted = classifier.feature_log_prob_[1, :].argsort()[::-1]
+    # print(np.take(vectorizer.get_feature_names_out(), ham_class_prob_sorted[:10]))
+
 
 
 if __name__ == "__main__":
