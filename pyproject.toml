@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "connectorx>=0.4.5",
     "jupyter>=1.1.1",
     "jupyter-collaboration>=4.4.1",
     "jupyter-contrib-nbextensions>=0.7.0",
@@ -15,8 +16,15 @@ dependencies = [
     "matplotlib>=3.11.1",
     "notebook>=7.6.0",
     "numpy>=2.5.1",
+    "pandas>=3.0.5",
+    "polars>=1.43.1",
+    "pyarrow>=25.0.0",
     "scikit-learn>=1.9.0",
     "scipy>=1.18.0",
     "tiktoken>=0.13.0",
+    "tqdm>=4.70.0",
     "webio-jupyter-extension>=0.1.0",
 ]
+
+[tool.basedpyright]
+typeCheckingMode = "standard"
