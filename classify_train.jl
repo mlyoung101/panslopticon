@@ -14,8 +14,10 @@ using MLJBase
 using Languages
 using ThreadsX
 using Caching
+using BytePairEncoding
 using Infiltrator
 using Random
+using TextEncodeBase
 
 CountTransformer = @load CountTransformer pkg=MLJText
 MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
@@ -42,7 +44,6 @@ function train()
     # based on:
     # https://juliaai.github.io/MLJ.jl/stable/models/MultinomialNBClassifier_NaiveBayes/#MultinomialNBClassifier_NaiveBayes'
     # https://github.com/JuliaAI/MLJText.jl#tf-idf-transformer
-
     spam, ham = load_data()
     println("$(length(spam)) spam files")
     println("$(length(ham)) ham files")
@@ -59,25 +60,38 @@ function train()
     labels = [x[2] for x in labels_with_contents]
     # @infiltrate
 
+    println("Loading tokenizer model...")
+    encoder = BytePairEncoding.load_tiktoken_encoder("cl100k_base")
+    classes = [TextEncodeBase.lookup(encoder.vocab, x) for x in 1:length(encoder.vocab)]
+
     println("Tokenising...")
-    tokenised = ThreadsX.map(doc -> TextAnalysis.tokenize(Languages.English(), doc), corpus)
+    tokenised::Vector{Vector{AbstractString}} = []
+    @showprogress for file in corpus
+        tokens = encoder.encode(file)
+        words = [TextEncodeBase.lookup(encoder.vocab, x) for x in tokens]
+        push!(tokenised, words)
+    end
+    @infiltrate
 
     println("Computing features...")
-    mach1 = machine(CountTransformer(), tokenised) |> MLJ.fit!
+    # really awful hack
+    # vcat(all_vocab_dummy, tokenised)
+    mach1 = machine(CountTransformer(), vcat(classes, tokenised)) |> MLJ.fit!
 
     # matrix of counts
     X = MLJ.transform(mach1, tokenised)
-    y = coerce(labels, OrderedFactor)
+    # y = coerce(labels, OrderedFactor)
+    y = categorical(labels, ordered=true, levels=["ham", "spam"])
 
     println("Training classifier...")
-    classifier = MultinomialNBClassifier()
+    classifier = MultinomialNBClassifier(alpha=1.0)
     mach2 = machine(classifier, X, y)
     MLJ.fit!(mach2, rows=1:train_ratio)
     serialize("data/model2.dat", mach2)
 
     println("Predicting...")
-    y_prob = MLJ.predict(mach2, rows=train_ratio+1:length(corpus))
-    loss = log_loss(y_prob, y[train_ratio+1:length(corpus)])
+    y_prob = MLJ.predict(mach2, rows=(train_ratio+1):length(corpus))
+    loss = log_loss(y_prob, y[(train_ratio+1):length(corpus)])
     println("Loss: $(loss)")
 
     @infiltrate
