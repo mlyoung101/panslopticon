@@ -5,10 +5,7 @@
 using TextAnalysis: serialize
 using SQLite
 using DataFrames
-using WordTokenizers
-using StatsBase
 using Serialization
-using MLDataUtils
 using TextAnalysis
 using ProgressMeter
 using MLJ
@@ -16,6 +13,9 @@ using MLJText
 using MLJBase
 using Languages
 using ThreadsX
+using Caching
+using Infiltrator
+using Random
 
 CountTransformer = @load CountTransformer pkg=MLJText
 MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
@@ -39,48 +39,48 @@ function load_data()
 end
 
 function train()
-    spam, ham = load_data()
-    corpus = vcat(spam, ham)
-    println("$(length(spam)) spam files")
-    println("$(length(ham)) ham files")
-
-    # split test and train set with Julia's cool new MLDataUtils
-    # refs:
-    # https://discourse.julialang.org/t/simple-tool-for-train-test-split/473/4
-    # https://github.com/JuliaML/MLDataUtils.jl
-    train_ham, test_ham = splitobs(ham; at=0.8)
-    train_spam, test_spam = splitobs(spam; at=0.8)
-
-    # prepare labels on the train set
-    train_corpus = vcat(train_ham, train_spam)
-    labels = vcat(repeat(["ham"], length(train_ham)), repeat(["spam"], length(train_spam)))
-
     # based on:
     # https://juliaai.github.io/MLJ.jl/stable/models/MultinomialNBClassifier_NaiveBayes/#MultinomialNBClassifier_NaiveBayes'
     # https://github.com/JuliaAI/MLJText.jl#tf-idf-transformer
 
+    spam, ham = load_data()
+    println("$(length(spam)) spam files")
+    println("$(length(ham)) ham files")
+
+    # shuffle the corpus to get our test and train set; MLJ requires it to be this way :/
+    labels = vcat(repeat(["ham"], length(ham)), repeat(["spam"], length(spam)))
+    corpus = vcat(ham, spam)
+    labels_with_contents = Random.shuffle!(collect(zip(corpus, labels)))
+    # 80% train, 20% test
+    train_ratio = Int64(round(0.8 * length(labels_with_contents)))
+
+    # split apart the labels again
+    corpus = [x[1] for x in labels_with_contents]
+    labels = [x[2] for x in labels_with_contents]
+    # @infiltrate
+
     println("Tokenising...")
     tokenised = ThreadsX.map(doc -> TextAnalysis.tokenize(Languages.English(), doc), corpus)
 
-    println("Computing TF-IDF features...")
+    println("Computing features...")
     mach1 = machine(CountTransformer(), tokenised) |> MLJ.fit!
 
     # matrix of counts
     X = MLJ.transform(mach1, tokenised)
     y = coerce(labels, OrderedFactor)
-    serialize("data/corpus.dat", corpus)
-    serialize("data/X.dat", X)
-    serialize("data/Y.dat", y)
-    serialize("data/mach1.dat", mach1)
-    serialize("data/tokenised.dat", tokenised)
 
-    println("Now training...")
+    println("Training classifier...")
     classifier = MultinomialNBClassifier()
     mach2 = machine(classifier, X, y)
-    MLJ.fit!(mach2, rows=1:length(train_corpus))
-    serialize("data/mach2.dat", mach2)
+    MLJ.fit!(mach2, rows=1:train_ratio)
+    serialize("data/model2.dat", mach2)
 
-    println("Done.")
+    println("Predicting...")
+    y_prob = MLJ.predict(mach2, rows=train_ratio+1:length(corpus))
+    loss = log_loss(y_prob, y[train_ratio+1:length(corpus)])
+    println("Loss: $(loss)")
+
+    @infiltrate
 end
 
 train()
