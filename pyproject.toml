@@ -3,9 +3,12 @@ name = "eraticcompress"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+# due to a UV bug
+requires-python = "==3.13.*"
 dependencies = [
     "connectorx>=0.4.5",
+    "dtreeviz>=2.3.2",
+    "graphviz>=0.21",
     "jupyter>=1.1.1",
     "jupyter-collaboration>=4.4.1",
     "jupyter-contrib-nbextensions>=0.7.0",
@@ -21,6 +24,7 @@ dependencies = [
     "plain-text-markdown-extention",
     "polars>=1.43.1",
     "pyarrow>=25.0.0",
+    "rich>=15.0.0",
     "scikit-learn>=1.9.0",
     "scipy>=1.18.0",
     "tiktoken>=0.13.0",
