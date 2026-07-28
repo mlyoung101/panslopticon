@@ -1,0 +1,17 @@
+[project]
+name = "eraticcompress"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "jupyter>=1.1.1",
+    "jupyter-collaboration>=4.4.1",
+    "jupyter-contrib-nbextensions>=0.7.0",
+    "jupyterlab-lsp>=5.3.0",
+    "jupyterlab-vim>=4.1.4",
+    "jupyterlab-wakatime>=0.2.0",
+    "jupytext>=1.19.4",
+    "notebook>=7.6.0",
+    "webio-jupyter-extension>=0.1.0",
+]

@@ -13,6 +13,9 @@ using TextAnalysis
 using ProgressMeter
 using MLJ
 using MLJText
+using MLJBase
+using Languages
+using ThreadsX
 
 CountTransformer = @load CountTransformer pkg=MLJText
 MultinomialNBClassifier = @load MultinomialNBClassifier pkg=NaiveBayes
@@ -48,14 +51,36 @@ function train()
     train_ham, test_ham = splitobs(ham; at=0.8)
     train_spam, test_spam = splitobs(spam; at=0.8)
 
+    # prepare labels on the train set
+    train_corpus = vcat(train_ham, train_spam)
+    labels = vcat(repeat(["ham"], length(train_ham)), repeat(["spam"], length(train_spam)))
+
     # based on:
     # https://juliaai.github.io/MLJ.jl/stable/models/MultinomialNBClassifier_NaiveBayes/#MultinomialNBClassifier_NaiveBayes'
     # https://github.com/JuliaAI/MLJText.jl#tf-idf-transformer
-    tfidf_transformer = TfidfTransformer()
-    mach = machine(tfidf_transformer, TextAnalysis.tokenize.(corpus))
-    MLJ.fit!(mach)
+
+    println("Tokenising...")
+    tokenised = ThreadsX.map(doc -> TextAnalysis.tokenize(Languages.English(), doc), corpus)
+
+    println("Computing TF-IDF features...")
+    mach1 = machine(CountTransformer(), tokenised) |> MLJ.fit!
+
+    # matrix of counts
+    X = MLJ.transform(mach1, tokenised)
+    y = coerce(labels, OrderedFactor)
+    serialize("data/corpus.dat", corpus)
+    serialize("data/X.dat", X)
+    serialize("data/Y.dat", y)
+    serialize("data/mach1.dat", mach1)
+    serialize("data/tokenised.dat", tokenised)
+
+    println("Now training...")
+    classifier = MultinomialNBClassifier()
+    mach2 = machine(classifier, X, y)
+    MLJ.fit!(mach2, rows=1:length(train_corpus))
+    serialize("data/mach2.dat", mach2)
 
     println("Done.")
 end
 
-# train()
+train()
