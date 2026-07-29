@@ -25,7 +25,7 @@ pub struct IngressItem {
     pub origin_src: String,
 }
 
-#[derive(Debug, FromRow, Clone)]
+#[derive(Debug, FromRow, Clone, Type)]
 pub struct SlopItem {
     pub id: i64,
     pub url: String,
@@ -36,6 +36,8 @@ pub struct SlopItem {
     pub dataset_path: Option<String>,
     pub origin_platform: String,
     pub origin_src: String,
+    #[sqlx(try_from = "i64")]
+    pub dead: bool
 }
 
 #[derive(Debug, FromRow, Clone)]

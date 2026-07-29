@@ -38,11 +38,14 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
     // origin_platform TEXT NOT NULL, -- i.e. github, reddit
     // origin_src TEXT NOT NULL -- i.e. r/selfhosted; tag-llm
 
+    // due to bullshit
+    // https://github.com/transact-rs/sqlx/issues/2648#issuecomment-1970636631
     let slop = sqlx::query_as!(
         SlopItem,
         r#"
             SELECT
-        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src
+        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src,
+        dead AS "dead: _"
             FROM slop
             ORDER BY RANDOM();
         "#
@@ -52,6 +55,12 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
 
     for item in slop {
         info!("Update repo: {}", item.url);
+
+        if item.dead {
+            info!("Repo is already known to be dead, skipping...");
+            continue;
+        }
+
         let repo = GhRemoteRepo::new(item.url.clone());
 
         if repo.exists().await? {
@@ -65,21 +74,10 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
             .execute(&db)
             .await?;
         } else {
-            warn!("No LONGER exists!!");
-            continue;
-        }
-
-        // check if we're missing full text (we forgot to do this in early
-        // versions)
-        let has_full_text = sqlx::query!("SELECT * FROM full_text WHERE slop_id = ?;", item.id)
-            .fetch_optional(&db)
-            .await?
-            .is_some();
-
-        if !has_full_text {
-            warn!("Repo is missing full text");
-            let local_repo = repo.clone().await?;
-            update_full_text(item.id, &local_repo, &db, false).await?;
+            warn!("No LONGER exists! Marking as dead.");
+            sqlx::query!("UPDATE slop SET dead = 1 WHERE id = ?", item.id)
+                .execute(&db)
+                .await?;
         }
 
         // wait for HIDDEN(!) rate limits

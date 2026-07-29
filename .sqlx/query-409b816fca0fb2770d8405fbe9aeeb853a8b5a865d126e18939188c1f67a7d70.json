@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src\n            FROM slop\n            ORDER BY RANDOM();\n        ",
+  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src,\n        dead AS \"dead: _\"\n            FROM slop\n            ORDER BY RANDOM();\n        ",
   "describe": {
     "columns": [
       {
@@ -101,6 +101,17 @@
             "name": "origin_src"
           }
         }
+      },
+      {
+        "name": "dead: _",
+        "ordinal": 9,
+        "type_info": "Integer",
+        "origin": {
+          "Table": {
+            "table": "slop",
+            "name": "dead"
+          }
+        }
       }
     ],
     "parameters": {
@@ -115,8 +126,9 @@
       false,
       true,
       false,
+      false,
       false
     ]
   },
-  "hash": "57fc59b9eaa10589af5f3364ffaf29fa183188c357187e13b066ce07174fe6df"
+  "hash": "409b816fca0fb2770d8405fbe9aeeb853a8b5a865d126e18939188c1f67a7d70"
 }
