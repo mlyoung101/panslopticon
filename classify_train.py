@@ -28,10 +28,10 @@ from sklearn.decomposition import PCA
 def load_data() -> pd.DataFrame:
     conn = sqlite3.connect("data/panslop.db")
     spam = pd.read_sql_query(
-        "SELECT text FROM full_text ORDER BY RANDOM() LIMIT 8000", conn
+        "SELECT text FROM full_text ORDER BY RANDOM() LIMIT 10000", conn
     )
     ham = pd.read_sql_query(
-        "SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT 8000", conn
+        "SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT 10000", conn
     )
     conn.close()
 
@@ -76,40 +76,50 @@ def train():
 
     print("Vectorising...")
     vectorizer = TfidfVectorizer(stop_words="english", max_features=10000)
+
     X_train_vect = vectorizer.fit_transform(X_train)
     X_test_vect = vectorizer.transform(X_test)
 
+    with open("data/tfidf_vectorizer.dat", "wb") as f:
+        pickle.dump(vectorizer, f)
+
+    with open("data/X_train_vect.dat", "wb") as f:
+        pickle.dump(X_train, f)
+
+    with open("data/X_test_vect.dat", "wb") as f:
+        pickle.dump(X_test, f)
+
     # PCA
-    print("Doing PCA")
-    fig = plt.figure(1, figsize=(8, 6))
-    ax = fig.add_subplot(111)
-    X_reduced = PCA(n_components=2).fit_transform(X_train_vect)
-
-    scatter = ax.scatter(
-        X_reduced[:, 0],
-        X_reduced[:, 1],
-        c=[0 if x == "spam" else 1 for x in y_train],
-        s=40,
-    )
-
-    ax.set(
-        title="First principal components",
-        xlabel="1st Principal Component",
-        ylabel="2nd Principal Component",
-    )
-    ax.xaxis.set_ticklabels([])
-    ax.yaxis.set_ticklabels([])
-
-    # Add a legend
-    legend1 = ax.legend(
-        scatter.legend_elements()[0],
-        ["spam", "ham"],
-        loc="upper right",
-        title="Classes",
-    )
-    ax.add_artist(legend1)
-
-    plt.show()
+    # print("Doing PCA")
+    # fig = plt.figure(1, figsize=(8, 6))
+    # ax = fig.add_subplot(111)
+    # X_reduced = PCA(n_components=2).fit_transform(X_train_vect)
+    #
+    # scatter = ax.scatter(
+    #     X_reduced[:, 0],
+    #     X_reduced[:, 1],
+    #     c=[0 if x == "spam" else 1 for x in y_train],
+    #     s=40,
+    # )
+    #
+    # ax.set(
+    #     title="First principal components",
+    #     xlabel="1st Principal Component",
+    #     ylabel="2nd Principal Component",
+    # )
+    # ax.xaxis.set_ticklabels([])
+    # ax.yaxis.set_ticklabels([])
+    #
+    # # Add a legend
+    # legend1 = ax.legend(
+    #     scatter.legend_elements()[0],
+    #     ["spam", "ham"],
+    #     loc="upper right",
+    #     title="Classes",
+    # )
+    # ax.add_artist(legend1)
+    #
+    # plt.show()
 
     # based on https://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html
     classifiers = {
@@ -139,7 +149,7 @@ def train():
         rich.print(f"[bold red]Classification report for {name}:[/bold red]\n{report}")
         print()
 
-        with open(f"data/classifier_{type(classifier)}.dat", "wb") as f:
+        with open(f"data/classifier_{type(classifier).__name__}.dat", "wb") as f:
             pickle.dump(classifier, f)
 
         if isinstance(classifier, DecisionTreeClassifier):
