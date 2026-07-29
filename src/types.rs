@@ -3,7 +3,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 // was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -66,9 +66,8 @@ pub struct ConfigDetect {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigIngress {
-    pub gh_tags: Vec<String>,
-    pub gh_tags_ham: Vec<String>,
-    pub subreddits: Vec<String>,
+    pub gh_tags: HashSet<String>,
+    pub gh_ham_tags_blocklist: HashSet<String>,
     pub gh_min_stars: u32,
     pub gh_date_cutoff: String,
     pub gh_http_head_wait_ms: u64,

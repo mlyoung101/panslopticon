@@ -68,25 +68,28 @@ generic = ["AGENTS.md", "SKILLS.md", "AI_GUIDE.md", ".agents", ".agent"]
 gh_tags = [
     "ai", "mcp", "self-hosted", "selfhosted", "rust", "frontend", "crypto", "react", "api", "saas", "fastapi",
     "webapp", "fpga", "asic", "chip", "python", "javascript", "cpp", "gpu", "library", "c", "webgpu", "java",
-    "kotlin", "flask", "zig", "compiler", "parser", "custom-language"
+    "kotlin", "flask", "zig", "compiler", "parser", "custom-language", "interpreter", "game", "unity",
+    "unreal", "gamedev", "kernel", "neovim", "julia", "high-performance-computing", "hpc", "simulation", "llm",
+    "big-data", "sql", "rag", "embedded", "rtos", "kernel", "verilog", "systemverilog", "risc-v", "typst",
+    "linux", "android", "jupyter-notebook", "godot", "scala", "app", "agents", "nodejs", "lisp", "lua",
+    "racket", "scheme", "ocaml", "clojure", "framework", "e-commerce"
 ]
+
+# Minimum stars even for slop; used as kind of a spam filter
 gh_min_stars = 2
+
 # repo must be created after this date to be considered slop
 # currently this is 1 Jan 2025; technically Devin was released earlier but I think no one used it
 # ! MUST BE RFC 2822 !
 gh_date_cutoff = "Wed, 1 Jan 2025 00:00:00 +0000"
 
-subreddits = [
-    "rust", "zig", "typescript", "programming", "selfhosted", "fpga"
-]
-
 # Number of milliseconds to wait between GitHub HTTP HEAD requests
-gh_http_head_wait_ms = 500
+gh_http_head_wait_ms = 700
 
-# GitHub tags to source ham (good data) from
-gh_tags_ham = [
-    "rust",  "react", "webapp", "fpga", "asic", "chip", "python", "javascript", "cpp", "gpu", "library", "c",
-    "webgpu", "java", "kotlin", "flask", "zig", "compiler", "parser", "custom-language"
+# GitHub tags to NOT search for, when searching for ham
+# These would all be slop most likely anyway
+gh_ham_tags_blocklist = [
+    "ai", "mcp", "crypto", "saas", "llm", "big-data", "agents", "rag"
 ]
 
 # Score calculation
@@ -112,4 +115,4 @@ excessively_long_readme = 10.0
 excessively_long_commit = 0.25
 
 # !! The all important threshold to decide if a project is slop or not !!
-threshold = 100
+threshold = 95

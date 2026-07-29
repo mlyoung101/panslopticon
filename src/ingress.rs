@@ -3,7 +3,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 // was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::{path::PathBuf, time::Duration};
+use std::{collections::HashSet, path::PathBuf, time::Duration};
 
 use chrono::{DateTime, Utc};
 use log::{info, warn};
@@ -127,7 +127,7 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
 /// Tries to find "good" readmes for the "ham" dataset
 pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
     info!(
-        "Start GitHub 'good' ingress process. Config: {}, DB: {}",
+        "Start GitHub ham ingress process. Config: {}, DB: {}",
         config.to_string_lossy(),
         db.to_string_lossy()
     );
@@ -141,7 +141,15 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
     let url = format!("sqlite://{}", db.to_string_lossy());
     let db = SqlitePool::connect(&url).await?;
 
-    for topic in &config_parsed.ingress.gh_tags_ham {
+    let resolved_tags: HashSet<&String> = config_parsed
+        .ingress
+        .gh_tags
+        .difference(&config_parsed.ingress.gh_ham_tags_blocklist)
+        .collect();
+
+    info!("Ham: {:?}", resolved_tags);
+
+    for topic in &resolved_tags {
         info!("Query GitHub topic: {}", topic);
         let page = rand::random_range(1..25);
 
