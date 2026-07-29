@@ -28,6 +28,7 @@ dependencies = [
     "rich>=15.0.0",
     "scikit-learn>=1.9.0",
     "scipy>=1.18.0",
+    "seaborn>=0.13.2",
     "tiktoken>=0.13.0",
     "tqdm>=4.70.0",
     "webio-jupyter-extension>=0.1.0",
