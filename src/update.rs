@@ -12,7 +12,7 @@ use sqlx::SqlitePool;
 use crate::{
     analyser::update_full_text,
     repo::GhRemoteRepo,
-    types::{PanslopConfig, SlopItem},
+    types::{HamItem, PanslopConfig, SlopItem},
 };
 
 pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
@@ -28,63 +28,119 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
     let url = format!("sqlite://{}", db.to_string_lossy());
     let db = SqlitePool::connect(&url).await?;
 
-    // id INTEGER PRIMARY KEY NOT NULL,
-    // url TEXT NOT NULL,
-    // date_added TEXT NOT NULL,
-    // score REAL NOT NULL, -- why this was detected, the score
-    // panslop_version TEXT NOT NULL, -- version of panslopticon that detected this
-    // date_last_seen TEXT NOT NULL,
-    // dataset_path TEXT, -- Zstd compressed storage location on disk, once checked out
-    // origin_platform TEXT NOT NULL, -- i.e. github, reddit
-    // origin_src TEXT NOT NULL -- i.e. r/selfhosted; tag-llm
+    // FIXME EXTREMELY UGLY CODE DUPLICATION RAHHHH
 
-    // due to bullshit
-    // https://github.com/transact-rs/sqlx/issues/2648#issuecomment-1970636631
-    let slop = sqlx::query_as!(
+    // also, we now only fetch up to 4k repos a day (2k ham + 2k spam) to hopefully stay on GH's
+    // good side and not get my IP address perma blocked
+
+    info!("Updating spam...");
+    {
+        // due to bullshit
+        // https://github.com/transact-rs/sqlx/issues/2648#issuecomment-1970636631
+        let slop = sqlx::query_as!(
         SlopItem,
         r#"
             SELECT
         id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src,
         dead AS "dead: _"
             FROM slop
-            ORDER BY RANDOM();
+            ORDER BY RANDOM()
+            LIMIT 2000;
         "#
     )
     .fetch_all(&db)
     .await?;
 
-    for item in slop {
-        info!("Update repo: {}", item.url);
+        for item in slop {
+            info!("Update repo: {}", item.url);
 
-        if item.dead {
-            info!("Repo is already known to be dead, skipping...");
-            continue;
-        }
+            if item.dead {
+                info!("Repo is already known to be dead, skipping...");
+                continue;
+            }
 
-        let repo = GhRemoteRepo::new(item.url.clone());
+            let repo = GhRemoteRepo::new(item.url.clone());
 
-        if repo.exists().await? {
-            info!("Still exists");
-            let now = Utc::now();
-            sqlx::query!(
-                "UPDATE slop SET date_last_seen = ? WHERE id = ?;",
-                now,
-                item.id
-            )
-            .execute(&db)
-            .await?;
-        } else {
-            warn!("No LONGER exists! Marking as dead.");
-            sqlx::query!("UPDATE slop SET dead = 1 WHERE id = ?", item.id)
+            if repo.exists().await? {
+                info!("Still exists");
+                let now = Utc::now();
+                sqlx::query!(
+                    "UPDATE slop SET date_last_seen = ? WHERE id = ?;",
+                    now,
+                    item.id
+                )
                 .execute(&db)
                 .await?;
-        }
+            } else {
+                warn!("No LONGER exists! Marking as dead.");
+                sqlx::query!("UPDATE slop SET dead = 1 WHERE id = ?", item.id)
+                    .execute(&db)
+                    .await?;
+            }
 
-        // wait for HIDDEN(!) rate limits
-        info!("Waiting for rate limit...");
-        std::thread::sleep(Duration::from_millis(
-            config_parsed.ingress.gh_http_head_wait_ms,
-        ));
+            // wait for HIDDEN(!) rate limits
+            info!("Waiting for rate limit...");
+            std::thread::sleep(Duration::from_millis(
+                config_parsed.ingress.gh_http_head_wait_ms,
+            ));
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    info!("Updating ham...");
+    {
+        // due to bullshit
+        // https://github.com/transact-rs/sqlx/issues/2648#issuecomment-1970636631
+        let slop = sqlx::query_as!(
+        HamItem,
+        r#"
+            SELECT
+        id, url, date_added, score, panslop_version, origin_platform, origin_src, dead AS "dead: _", date_last_seen
+            FROM ham
+            ORDER BY RANDOM()
+            LIMIT 2000;
+        "#
+        )
+        .fetch_all(&db)
+        .await?;
+
+        for item in &slop {
+            info!(
+                "Update repo: {}",
+                item.url.clone().unwrap()
+            );
+
+            if item.dead {
+                info!("Repo is already known to be dead, skipping...");
+                continue;
+            }
+
+            let repo = GhRemoteRepo::new(item.url.clone().unwrap());
+
+            if repo.exists().await? {
+                info!("Still exists");
+                let now = Utc::now();
+                sqlx::query!(
+                    "UPDATE ham SET date_last_seen = ? WHERE id = ?;",
+                    now,
+                    item.id
+                )
+                .execute(&db)
+                .await?;
+            } else {
+                warn!("No LONGER exists! Marking as dead.");
+                sqlx::query!("UPDATE ham SET dead = 1 WHERE id = ?", item.id)
+                    .execute(&db)
+                    .await?;
+            }
+
+            // wait for HIDDEN(!) rate limits
+            info!("Waiting for rate limit...");
+            std::thread::sleep(Duration::from_millis(
+                config_parsed.ingress.gh_http_head_wait_ms,
+            ));
+        }
     }
 
     Ok(())

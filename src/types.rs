@@ -5,7 +5,6 @@
 
 use std::collections::{HashMap, HashSet};
 
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::*;
 
@@ -37,7 +36,27 @@ pub struct SlopItem {
     pub origin_platform: String,
     pub origin_src: String,
     #[sqlx(try_from = "i64")]
-    pub dead: bool
+    pub dead: bool,
+}
+
+// alright, bullshit #2 in the hell world that is sqlx
+// when we made the ham table, we forgot to make all the fields 'NOT NULL'
+// and unfortunately SQLite doesn't let us make a NULL column NOT NULL without completely redoing it
+// HENCE, everything here, literally everything, has to be Option.
+// I extend my gratitudes to SQLx for producing a proc macro error so fucking incomprehensible it
+// only took half an hour to figure out! amazing!
+#[derive(Debug, FromRow, Clone, Type)]
+pub struct HamItem {
+    pub id: i64,
+    pub url: Option<String>,
+    pub date_added: Option<String>,
+    pub score: f64,
+    pub panslop_version: Option<String>,
+    pub origin_platform: Option<String>,
+    pub origin_src: Option<String>,
+    #[sqlx(try_from = "i64")]
+    pub dead: bool,
+    pub date_last_seen: Option<String>,
 }
 
 #[derive(Debug, FromRow, Clone)]

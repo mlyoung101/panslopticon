@@ -84,7 +84,7 @@ gh_min_stars = 2
 gh_date_cutoff = "Wed, 1 Jan 2025 00:00:00 +0000"
 
 # Number of milliseconds to wait between GitHub HTTP HEAD requests
-gh_http_head_wait_ms = 700
+gh_http_head_wait_ms = 1000
 
 # GitHub tags to NOT search for, when searching for ham
 # These would all be slop most likely anyway
