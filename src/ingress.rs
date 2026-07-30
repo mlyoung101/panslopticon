@@ -182,7 +182,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
             let Ok((score, _)) = calculate_score(&config_parsed, &local).await else {
                 warn!(
                     "Failed to calculate score for ham repo: {}",
-                    url.to_string()
+                    url
                 );
                 continue;
             };

@@ -5,7 +5,7 @@
 
 use chrono::Utc;
 use indicatif::ProgressIterator;
-use lingua::{Language, LanguageDetector, LanguageDetectorBuilder};
+use lingua::{Language, LanguageDetectorBuilder};
 use regex::Regex;
 use regex_cache::LazyRegex;
 use sqlx::{Pool, Sqlite, SqlitePool};
@@ -21,7 +21,7 @@ use log::{debug, info, warn};
 
 use crate::{
     repo::{GhLocalRepo, GhRemoteRepo},
-    types::{FullTextItem, HamFullTextItem, IngressItem, PanslopConfig, SlopItem},
+    types::{FullTextItem, HamFullTextItem, IngressItem, PanslopConfig},
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -438,7 +438,7 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
     );
 
     let config_str = std::fs::read_to_string(config)?;
-    let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+    let _config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
     let url = format!("sqlite://{}", db.to_string_lossy());
     let db = SqlitePool::connect(&url).await?;
@@ -457,8 +457,8 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
         let mut removed = 0;
         for item in all_full_text.iter().progress() {
-            if let Some(language) = language_detector.detect_language_of(&item.text) {
-                if language != Language::English {
+            if let Some(language) = language_detector.detect_language_of(&item.text)
+                && language != Language::English {
                     sqlx::query!(
                         "DELETE FROM full_text WHERE slop_id = ? AND file = ? AND text = ?;",
                         item.slop_id,
@@ -469,7 +469,6 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                     .await?;
                     removed += 1;
                 }
-            }
         }
         info!("Removed {} non-English files from slop", removed);
     }
@@ -486,8 +485,8 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
 
         let mut removed = 0;
         for item in all_full_text.iter().progress() {
-            if let Some(language) = language_detector.detect_language_of(&item.text) {
-                if language != Language::English {
+            if let Some(language) = language_detector.detect_language_of(&item.text)
+                && language != Language::English {
                     sqlx::query!(
                         "DELETE FROM ham_full_text WHERE id = ? AND file = ? AND text = ?;",
                         item.id,
@@ -498,7 +497,6 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                     .await?;
                     removed += 1;
                 }
-            }
         }
         info!("Removed {} non-English files from ham", removed);
     }

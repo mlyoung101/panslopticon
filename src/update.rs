@@ -10,7 +10,6 @@ use log::{info, warn};
 use sqlx::SqlitePool;
 
 use crate::{
-    analyser::update_full_text,
     repo::GhRemoteRepo,
     types::{HamItem, PanslopConfig, SlopItem},
 };
@@ -106,10 +105,7 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
         .await?;
 
         for item in &slop {
-            info!(
-                "Update repo: {}",
-                item.url.clone().unwrap()
-            );
+            info!("Update repo: {}", item.url.clone().unwrap());
 
             if item.dead {
                 info!("Repo is already known to be dead, skipping...");
