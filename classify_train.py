@@ -28,10 +28,10 @@ from sklearn.decomposition import PCA
 def load_data() -> pd.DataFrame:
     conn = sqlite3.connect("data/panslop.db")
     spam = pd.read_sql_query(
-        "SELECT text FROM full_text ORDER BY RANDOM() LIMIT 10000", conn
+        "SELECT text FROM full_text ORDER BY RANDOM() LIMIT 4000", conn
     )
     ham = pd.read_sql_query(
-        "SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT 10000", conn
+        "SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT 4000", conn
     )
     conn.close()
 

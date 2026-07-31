@@ -60,6 +60,9 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
 
     let cutoff = DateTime::parse_from_rfc2822(&config_parsed.ingress.gh_date_cutoff)?;
 
+    // TODO we should also do a search that's just "stars:>=2" and sort by newest, that really
+    // works!
+
     for topic in config_parsed.ingress.gh_tags {
         info!("Query GitHub topic: {}", topic);
 
@@ -69,7 +72,7 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
                 "topic:{} stars:>={}",
                 topic, config_parsed.ingress.gh_min_stars
             ))
-            .per_page(50)
+            .per_page(100)
             .sort("updated")
             .send()
             .await?;
@@ -187,7 +190,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 continue;
             };
 
-            if score <= 65.0 {
+            if score <= config_parsed.scoring.ham_threshold {
                 info!("Repo {} is confirmed ham, processing full text", url);
 
                 sqlx::query!(

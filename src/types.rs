@@ -106,6 +106,7 @@ pub struct ConfigScoring {
     pub ai_file: f64,
     pub ai_file_hidden: f64,
     pub readme_multiplier: f64,
+    pub ham_threshold: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

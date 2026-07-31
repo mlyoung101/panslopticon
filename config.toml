@@ -6,7 +6,7 @@
 emojis = "👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦|⚡|🔍|🤖|💥"
 
 # Maximum README length in characters considered to be excessive
-excessive_readme_length = 2000
+excessive_readme_length = 5000
 
 # Maximum commit body length in characters
 excessive_commit_length = 250
@@ -74,7 +74,8 @@ gh_tags = [
     "linux", "android", "jupyter-notebook", "godot", "scala", "app", "agents", "nodejs", "lisp", "lua",
     "racket", "scheme", "ocaml", "clojure", "framework", "e-commerce", "blockchain", "canvas", "game-engine",
     "nlp", "quant", "browser", "hacktoberfest", "claude", "database", "vector", "code-quality",
-    "code-analysis", "npm", "single-file", "nextjs", "offline", "zero-dependency", "css", "html"
+    "code-analysis", "npm", "single-file", "nextjs", "offline", "zero-dependency", "css", "html",
+    "cybersecurity", "exploit", "json", "yaml", "hack-tool", "hacker"
 ]
 
 # Minimum stars even for slop; used as kind of a spam filter
@@ -99,22 +100,26 @@ gh_ham_tags_blocklist = [
 # Each AI commit gains this many points. That total score is then divided by the total number of commits in
 # the repo (to normalise it)
 ai_commit = 50.0
+# this isn't really an incredibly good metric so we don't weight it very highly normalised per comment
+excessively_long_commit = 5.0
 
-readme_signal = 30.0
+readme_signal = 50.0
 emoji = 15.0
 emdash = 10.0
 # factor multiply the README score by, this is indicative of the length of an "average" README
 readme_multiplier = 2000.0
 
 # A single AI file that is not hidden
-ai_file = 33.334
+ai_file = 50.0
 
 # An AI file that **is** hidden, means the author intentionally is trying to hide it from us...
 ai_file_hidden = 100.0
 
 # This is high because it needs to weigh against the other scores, which are applied per commit
-excessively_long_readme = 10.0
-excessively_long_commit = 0.25
+excessively_long_readme = 15.0
 
 # !! The all important threshold to decide if a project is slop or not !!
 threshold = 75
+
+# Ham is considered to be less than or equal to this
+ham_threshold = 45
