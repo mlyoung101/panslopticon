@@ -72,7 +72,9 @@ gh_tags = [
     "unreal", "gamedev", "kernel", "neovim", "julia", "high-performance-computing", "hpc", "simulation", "llm",
     "big-data", "sql", "rag", "embedded", "rtos", "kernel", "verilog", "systemverilog", "risc-v", "typst",
     "linux", "android", "jupyter-notebook", "godot", "scala", "app", "agents", "nodejs", "lisp", "lua",
-    "racket", "scheme", "ocaml", "clojure", "framework", "e-commerce"
+    "racket", "scheme", "ocaml", "clojure", "framework", "e-commerce", "blockchain", "canvas", "game-engine",
+    "nlp", "quant", "browser", "hacktoberfest", "claude", "database", "vector", "code-quality",
+    "code-analysis", "npm", "single-file", "nextjs", "offline", "zero-dependency", "css", "html"
 ]
 
 # Minimum stars even for slop; used as kind of a spam filter
@@ -89,7 +91,7 @@ gh_http_head_wait_ms = 1000
 # GitHub tags to NOT search for, when searching for ham
 # These would all be slop most likely anyway
 gh_ham_tags_blocklist = [
-    "ai", "mcp", "crypto", "saas", "llm", "big-data", "agents", "rag"
+    "ai", "mcp", "crypto", "saas", "llm", "big-data", "agents", "rag", "blockchain", "claude"
 ]
 
 # Score calculation
@@ -115,4 +117,4 @@ excessively_long_readme = 10.0
 excessively_long_commit = 0.25
 
 # !! The all important threshold to decide if a project is slop or not !!
-threshold = 95
+threshold = 75
