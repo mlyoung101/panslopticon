@@ -7,6 +7,7 @@ use std::{collections::HashSet, path::PathBuf, time::Duration};
 
 use chrono::{DateTime, Utc};
 use log::{info, warn};
+use octocrab::models::Repository;
 use sqlx::{Pool, Sqlite, SqlitePool};
 
 use crate::{
@@ -42,6 +43,58 @@ async fn is_already_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::Result<
     Ok(result.count > 0)
 }
 
+/// Ingresses one repo
+async fn do_ingress_repo(
+    config: &PanslopConfig,
+    db: &Pool<Sqlite>,
+    repo: &Repository,
+    source: &String,
+) -> color_eyre::Result<()> {
+    let now = Utc::now();
+    let url = repo.html_url.as_ref().expect("no HTML URL");
+    let creation_date = repo.created_at.expect("no creation date");
+    let cutoff = DateTime::parse_from_rfc2822(&config.ingress.gh_date_cutoff)?;
+
+    // apply some filters first
+    if creation_date < cutoff {
+        info!("Reject repo '{}', created before cutoff date", url);
+        return Ok(());
+    } else {
+        info!("Accept repo: {}", url);
+    }
+
+    if is_definitely_not_slop(&url.to_string(), &db).await? {
+        info!("Repo {} is in not_slop table, skipping", url);
+        return Ok(());
+    }
+
+    if is_already_slop(&url.to_string(), &db).await? {
+        info!("Repo {} already considered slop", url);
+        return Ok(());
+    }
+
+    let insert = sqlx::query!(
+        r#"
+            INSERT INTO ingress(url, date_added, origin_platform, origin_src)
+            VALUES (?, ?, ?, ?);"#,
+        url.as_str(),
+        now,
+        "github",
+        source
+    )
+    .execute(db)
+    .await;
+
+    match insert {
+        Ok(_) => {}
+        Err(error) => {
+            warn!("Failed to insert repo {}: {}", url, error);
+        }
+    }
+
+    Ok(())
+}
+
 pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
     info!(
         "Start GitHub ingress process. Config: {}, DB: {}",
@@ -58,13 +111,9 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
     let url = format!("sqlite://{}", db.to_string_lossy());
     let db = SqlitePool::connect(&url).await?;
 
-    let cutoff = DateTime::parse_from_rfc2822(&config_parsed.ingress.gh_date_cutoff)?;
-
-    // TODO we should also do a search that's just "stars:>=2" and sort by newest, that really
-    // works!
-
-    for topic in config_parsed.ingress.gh_tags {
+    for topic in &config_parsed.ingress.gh_tags {
         info!("Query GitHub topic: {}", topic);
+        let source = format!("tag-{}", &topic);
 
         let result = api
             .search()
@@ -77,47 +126,30 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
             .send()
             .await?;
 
-        for repo in result.items {
-            let now = Utc::now();
-            let url = repo.html_url.expect("no HTML URL");
-            let creation_date = repo.created_at.expect("no creation date");
+        for repo in &result.items {
+            do_ingress_repo(&config_parsed, &db, &repo, &source).await?;
+        }
 
-            // apply some filters first
-            if creation_date < cutoff {
-                info!("Reject repo '{}', created before cutoff date", url);
-                continue;
-            } else {
-                info!("Accept repo: {}", url);
-            }
+        info!("Waiting for rate limit...");
+        std::thread::sleep(Duration::from_secs(10)); // rate limits!!
+    }
 
-            if is_definitely_not_slop(&url.to_string(), &db).await? {
-                info!("Repo {} is in not_slop table, skipping", url);
-                continue;
-            }
+    info!("Perform broad search");
+    for _ in 1..config_parsed.ingress.gh_broad_search_num {
+        let page = rand::random_range(1..config_parsed.ingress.gh_broad_search_pages_max);
 
-            if is_already_slop(&url.to_string(), &db).await? {
-                info!("Repo {} already considered slop", url);
-                continue;
-            }
+        info!("Query GitHub newest, page: {}", page);
+        let result = api
+            .search()
+            .repositories(&format!("stars:>={}", config_parsed.ingress.gh_min_stars))
+            .per_page(100)
+            .page(page as u32)
+            .sort("updated")
+            .send()
+            .await?;
 
-            let insert = sqlx::query!(
-                r#"
-                INSERT INTO ingress(url, date_added, origin_platform, origin_src)
-                VALUES (?, ?, ?, ?);"#,
-                &url.as_str(),
-                &now,
-                "github",
-                format!("tag-{}", topic)
-            )
-            .execute(&db)
-            .await;
-
-            match insert {
-                Ok(_) => {}
-                Err(error) => {
-                    warn!("Failed to insert repo {}: {}", url, error);
-                }
-            }
+        for repo in &result.items {
+            do_ingress_repo(&config_parsed, &db, &repo, &"broad_search".to_string()).await?;
         }
 
         info!("Waiting for rate limit...");
@@ -183,10 +215,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
             let local = remote.clone().await?;
 
             let Ok((score, _)) = calculate_score(&config_parsed, &local).await else {
-                warn!(
-                    "Failed to calculate score for ham repo: {}",
-                    url
-                );
+                warn!("Failed to calculate score for ham repo: {}", url);
                 continue;
             };
 

@@ -95,6 +95,12 @@ gh_ham_tags_blocklist = [
     "ai", "mcp", "crypto", "saas", "llm", "big-data", "agents", "rag", "blockchain", "claude"
 ]
 
+# Number of rounds of a GitHub broad search (just "stars:>=gh_min_stairs") to do
+gh_broad_search_num = 15
+
+# Select a random page between 1 and this many pages in the broad search
+gh_broad_search_pages_max = 50
+
 # Score calculation
 [scoring]
 # Each AI commit gains this many points. That total score is then divided by the total number of commits in

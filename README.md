@@ -58,7 +58,9 @@ from all files archived). If no, they get added to the "not_slop" table and will
 still exist and updates their stars and forks count.
 
 ## Spam/ham classifier
-A classifier is written in Julia to attempt to distinguish between human-written READMEs and slop READMEs.
+Some classifiers are prototyped in Python to attempt to distinguish between human-written READMEs and slop
+READMEs, i.e. the classic ham vs. spam task. Currently, a simple naive Bayes classifier performs excellently
+on the dataset.
 
 ## Licence
 Copyright (c) 2026 Mel Young. Available under the MPL 2.0.

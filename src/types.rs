@@ -92,6 +92,8 @@ pub struct ConfigIngress {
     pub gh_min_stars: u32,
     pub gh_date_cutoff: String,
     pub gh_http_head_wait_ms: u64,
+    pub gh_broad_search_num: i32,
+    pub gh_broad_search_pages_max: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
