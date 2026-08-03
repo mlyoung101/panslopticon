@@ -7,6 +7,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use env_logger::{Builder, Env};
+use log::info;
 
 use crate::{repo::GhRemoteRepo, types::PanslopConfig};
 
@@ -124,6 +125,8 @@ async fn main() -> color_eyre::Result<()> {
             VERSION
         ),
     };
+
+    info!("Process completed.");
 
     Ok(())
 }
