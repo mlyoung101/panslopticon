@@ -26,8 +26,8 @@ def main() -> pd.DataFrame:
     # fucking insane
     # https://stackoverflow.com/a/46624802/5007892
     sns.countplot(
-        spam, x="origin_src", order=spam["origin_src"].value_counts().index
-    ).set(title="Spam")
+        ham, x="origin_src", order=ham["origin_src"].value_counts().index
+    ).set(title="Ham")
     plt.show()
 
 
