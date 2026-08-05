@@ -24,14 +24,15 @@ from sklearn.decomposition import PCA
 
 # based on: https://github.com/nadinejackson1/text-classification-naive-bayes/blob/main/main.ipynb
 
+LIMIT = 9000
 
 def load_data() -> pd.DataFrame:
     conn = sqlite3.connect("data/panslop.db")
     spam = pd.read_sql_query(
-        "SELECT text FROM full_text ORDER BY RANDOM() LIMIT 4000", conn
+        f"SELECT text FROM full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
     )
     ham = pd.read_sql_query(
-        "SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT 4000", conn
+        f"SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
     )
     conn.close()
 
@@ -56,13 +57,13 @@ def important_features(vectorizer, classifier, n=20):
     print("Top ham features")
 
     for coef, feat in topn_class1:
-        print(class_labels[0], coef, feat)
+        print(f"{class_labels[0]} {coef:.4f} {feat}")
 
     print("-----------------------------------------")
     print("Top spam features")
 
     for coef, feat in topn_class2:
-        print(class_labels[1], coef, feat)
+        print(f"{class_labels[1]} {coef:.4f} {feat}")
 
 
 def train():

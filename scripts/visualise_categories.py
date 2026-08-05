@@ -25,9 +25,13 @@ def main() -> pd.DataFrame:
 
     # fucking insane
     # https://stackoverflow.com/a/46624802/5007892
+    # sns.countplot(
+    #     ham, x="origin_src", order=ham["origin_src"].value_counts().index
+    # ).set(title="Ham")
     sns.countplot(
-        ham, x="origin_src", order=ham["origin_src"].value_counts().index
-    ).set(title="Ham")
+        spam, x="origin_src", order=spam["origin_src"].value_counts().index
+    ).set(title="spam")
+    plt.xticks(rotation=90)
     plt.show()
 
 
