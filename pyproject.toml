@@ -17,6 +17,7 @@ dependencies = [
     "jupyterlab-vim>=4.1.4",
     "jupyterlab-wakatime>=0.2.0",
     "jupytext>=1.19.4",
+    "lmppl>=0.3.2",
     "markdown>=3.10.2",
     "matplotlib>=3.11.1",
     "notebook>=7.6.0",

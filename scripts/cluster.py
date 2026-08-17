@@ -31,7 +31,7 @@ def cluster():
     spam, ham = load_data()
 
     transformer = SentenceTransformer(
-        "sentence-transformers/all-MiniLM-L6-v2", cache_folder="/tmp/transformers"
+        "sentence-transformers/all-MiniLM-L6-v2", cache_folder="/var/tmp/transformers"
     )
     spam_transformed = transformer.encode(spam, show_progress_bar=True)
     ham_transformed = transformer.encode(ham, show_progress_bar=True)
