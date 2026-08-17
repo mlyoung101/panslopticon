@@ -17,17 +17,26 @@ readme_signals = [
     "(?i)no .* no .* just .*",
     "(?i)it's not (just)?.* it's .*",
     "(?i)blazing.*fast",
-    "(?i)gpu-accelerated",
-    "(?i)web-?scale",
+    # "(?i)gpu-accelerated",
+    # "(?i)web-?scale",
     "(Project|Repo.*) (?i)(overview|layout|structure)",
     "```mermaid",
-    " · ", # centre dot
+    " · ", # centre dot unicode
     "(?i)no more .*\\.",
     "(?i)how it works",
     "(?i)(future work)|(suggested milestones)",
     "(?i)agent (skill|contract)",
     "(?i)bring-your-own",
-    "(?i)early day.*(bug.*|feedback) welcome"
+    "(?i)early day.*(bug.*|feedback) welcome",
+    "(?i)the point is",
+    # https://claudisms.ai/
+    "(?i)where it gets interesting",
+    "(?i)((and )?that matters)|this matters",
+    "(?i)lessons learned|lessons-learned",
+    "(?i)the whole (ball)?-?game",
+    "(?i)key takeaways",
+    "(?i)delve",
+    "(?i)a testament to"
 ]
 
 # Regexes to detect AI coding tools in Git commits
@@ -40,6 +49,7 @@ codex = ["(?i)OpenAI Codex", "(?i).*@openai.com"]
 coderabbit = ["noreply@coderabbit.ai"]
 gemini = ["(?i)gemini (pro|flash)", "(?i)antigravity"]
 
+# NOTE: often the commits contain higher levels of slop
 generic = [
     "(--)|→|×|–|—|⸺|⸻", # emdash/unicode
     "(?i)([0-9]+)?.*(tests )?(pass|passing)",
@@ -47,9 +57,9 @@ generic = [
     "(?i)belt-and-suspenders", # what the fuck does this even mean lmao; Claude-ism apparently
     "(?i)load-bearing",
     "(?i)no more .*\\.",
+    # https://claudisms.ai/
+    "(?i)harness"
 ]
-
-# TODO: maybe look for this: (──)+.*(──)+
 
 # TODO grep in more MD files (locate all MD files in the repo and grep them against our)
 
@@ -96,16 +106,16 @@ gh_ham_tags_blocklist = [
 ]
 
 # Number of rounds of a GitHub broad search (just "stars:>=gh_min_stairs") to do
-gh_broad_search_num = 15
+gh_broad_search_num = 20
 
 # Select a random page between 1 and this many pages in the broad search
-gh_broad_search_pages_max = 50
+gh_broad_search_pages_max = 10
 
 # Score calculation
 [scoring]
 # Each AI commit gains this many points. That total score is then divided by the total number of commits in
 # the repo (to normalise it)
-ai_commit = 50.0
+ai_commit = 65.0
 # this isn't really an incredibly good metric so we don't weight it very highly normalised per comment
 excessively_long_commit = 5.0
 
@@ -119,6 +129,7 @@ readme_multiplier = 2000.0
 ai_file = 50.0
 
 # An AI file that **is** hidden, means the author intentionally is trying to hide it from us...
+# FIXME not currently implemented
 ai_file_hidden = 100.0
 
 # This is high because it needs to weigh against the other scores, which are applied per commit
@@ -128,4 +139,4 @@ excessively_long_readme = 15.0
 threshold = 75
 
 # Ham is considered to be less than or equal to this
-ham_threshold = 45
+ham_threshold = 40
