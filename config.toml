@@ -109,7 +109,7 @@ gh_ham_tags_blocklist = [
 gh_broad_search_num = 20
 
 # Select a random page between 1 and this many pages in the broad search
-gh_broad_search_pages_max = 50
+gh_broad_search_pages_max = 10
 
 # Score calculation
 [scoring]
