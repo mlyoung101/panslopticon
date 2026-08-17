@@ -24,7 +24,7 @@ from sklearn.decomposition import PCA
 
 # based on: https://github.com/nadinejackson1/text-classification-naive-bayes/blob/main/main.ipynb
 
-LIMIT = 9000
+LIMIT = 12_000
 
 def load_data() -> pd.DataFrame:
     conn = sqlite3.connect("data/panslop.db")
