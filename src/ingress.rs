@@ -7,7 +7,7 @@ use std::{collections::HashSet, path::PathBuf, time::Duration};
 
 use chrono::{DateTime, Utc};
 use log::{info, warn};
-use octocrab::models::Repository;
+use octocrab::{Octocrab, models::Repository};
 use sqlx::{Pool, Sqlite, SqlitePool};
 
 use crate::{
@@ -105,8 +105,11 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
     let config_str = std::fs::read_to_string(config)?;
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-    // TODO auth, for nicer rate limits
-    let api = octocrab::instance();
+    let token = std::env::var("GITHUB_TOKEN").expect(
+        "GITHUB_TOKEN env var must be set
+        to a valid GitHub PAT",
+    );
+    let api = Octocrab::builder().personal_token(token).build()?;
 
     let url = format!("sqlite://{}", db.to_string_lossy());
     let db = SqlitePool::connect(&url).await?;
@@ -153,7 +156,7 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
         }
 
         info!("Waiting for rate limit...");
-        std::thread::sleep(Duration::from_secs(10)); // rate limits!!
+        std::thread::sleep(Duration::from_secs(2)); // rate limits!!
     }
 
     Ok(())
@@ -170,8 +173,11 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
     let config_str = std::fs::read_to_string(config)?;
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-    // TODO auth, for nicer rate limits
-    let api = octocrab::instance();
+    let token = std::env::var("GITHUB_TOKEN").expect(
+        "GITHUB_TOKEN env var must be set
+        to a valid GitHub PAT",
+    );
+    let api = Octocrab::builder().personal_token(token).build()?;
 
     let url = format!("sqlite://{}", db.to_string_lossy());
     let db = SqlitePool::connect(&url).await?;
@@ -257,7 +263,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
         }
 
         info!("Waiting for rate limit...");
-        std::thread::sleep(Duration::from_secs(10)); // rate limits!!
+        std::thread::sleep(Duration::from_secs(2)); // rate limits!!
     }
 
     Ok(())

@@ -2828,7 +2828,6 @@ dependencies = [
  "clap",
  "color-eyre",
  "dialoguer",
- "dotenvy",
  "env_logger",
  "eyre",
  "indicatif",
