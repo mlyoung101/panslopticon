@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ham SET date_last_seen = $1 WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a2e323ea1bb4023c7a1ea55e2378828fa19f0ea119f4b1c8909dd76ba2af7cd6"
+}

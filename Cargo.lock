@@ -1147,6 +1147,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e629b9b98ef3dd8afe6ca2bd0f89306cec16d43d907889945bc5d6687f2f13c7"
 
 [[package]]
+name = "git2"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddddbf932745a6be37109b6112d3ee09696106f848449069d3a57bba937ab82e"
+dependencies = [
+ "bitflags 2.13.0",
+ "libc",
+ "libgit2-sys",
+ "log",
+]
+
+[[package]]
 name = "group"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1743,6 +1755,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 
 [[package]]
+name = "libgit2-sys"
+version = "0.18.7+1.9.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23c7391e4b9f4ffab1a624223cc1d7385ff9a678f490768add717de7ea2f4d89"
+dependencies = [
+ "cc",
+ "libc",
+ "libz-sys",
+ "pkg-config",
+]
+
+[[package]]
 name = "libm"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1754,7 +1778,18 @@ version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1f111c8c41e7c61a49cd34e44c7619462967221a6443b0ec299e0ac30cfb9b1"
 dependencies = [
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
+name = "libz-sys"
+version = "1.1.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85bc9657773828b90eeb625adff10eeac83cc21bbfd8e23a03eaa8a33c9e28d9"
+dependencies = [
  "cc",
+ "libc",
  "pkg-config",
  "vcpkg",
 ]
@@ -2831,6 +2866,7 @@ dependencies = [
  "dotenvy",
  "env_logger",
  "eyre",
+ "git2",
  "indicatif",
  "lazy_static",
  "lingua",
@@ -2846,7 +2882,6 @@ dependencies = [
  "serde",
  "soup",
  "sqlx",
- "sqlx-sqlite",
  "subprocess",
  "tempfile",
  "tokio",
@@ -4039,12 +4074,10 @@ dependencies = [
  "sha2 0.10.9",
  "smallvec",
  "thiserror",
- "time",
  "tokio",
  "tokio-stream",
  "tracing",
  "url",
- "uuid",
  "webpki-roots",
 ]
 
@@ -4096,6 +4129,7 @@ dependencies = [
  "bitflags 2.13.0",
  "byteorder",
  "bytes",
+ "chrono",
  "crc",
  "digest 0.11.3",
  "dotenvy",
@@ -4123,6 +4157,7 @@ dependencies = [
  "base64",
  "bitflags 2.13.0",
  "byteorder",
+ "chrono",
  "crc",
  "dotenvy",
  "etcetera",
@@ -4169,10 +4204,8 @@ dependencies = [
  "serde",
  "sqlx-core",
  "thiserror",
- "time",
  "tracing",
  "url",
- "uuid",
 ]
 
 [[package]]
@@ -4742,16 +4775,6 @@ name = "utf8parse"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
-
-[[package]]
-name = "uuid"
-version = "1.23.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea5fab0d6c3c01ae70085a09cb03d4c7a1d6314e2b3e075392783396d724ca0a"
-dependencies = [
- "js-sys",
- "wasm-bindgen",
-]
 
 [[package]]
 name = "valuable"

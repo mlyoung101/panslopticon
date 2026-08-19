@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM ham_full_text WHERE id = $1 AND file = $2 AND text = $3;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e04a49f14a23bced79bf1359ff45f5322b2b9118b81bc80b167c40d7a0d0b4a4"
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO ingress(url, date_added, origin_platform, origin_src)\n            VALUES ($1, $2, $3, $4);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamp",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4a5da604a20bbad26126411db1ff793a0acf8c7cca711243f5f407e4ca7a910a"
+}

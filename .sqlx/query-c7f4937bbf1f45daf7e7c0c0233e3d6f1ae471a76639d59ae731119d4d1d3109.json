@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO agents(slop_id, agent) VALUES ($1, $2);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c7f4937bbf1f45daf7e7c0c0233e3d6f1ae471a76639d59ae731119d4d1d3109"
+}

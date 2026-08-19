@@ -27,8 +27,8 @@ enum Commands {
         /// Config TOML path
         config: PathBuf,
 
-        /// Database path
-        db: PathBuf,
+        /// Database URL
+        db: String,
     },
 
     /// Finds "ham" - good, non AI data
@@ -37,8 +37,8 @@ enum Commands {
         /// Config TOML path
         config: PathBuf,
 
-        /// Database path
-        db: PathBuf,
+        /// Database URL
+        db: String,
     },
 
     /// Analyse all previously ingressed data
@@ -47,8 +47,8 @@ enum Commands {
         /// Config TOML path
         config: PathBuf,
 
-        /// Database path
-        db: PathBuf,
+        /// Database URL
+        db: String,
     },
 
     /// Analyse a single repository (for debugging)
@@ -67,8 +67,8 @@ enum Commands {
         /// Config TOML path
         config: PathBuf,
 
-        /// Database path
-        db: PathBuf,
+        /// Database URL
+        db: String,
     },
 
     /// Runs a particular cleanup task that's hardcoded at the time, and hardcoded in
@@ -77,8 +77,8 @@ enum Commands {
         /// Config TOML path
         config: PathBuf,
 
-        /// Database path
-        db: PathBuf,
+        /// Database URL
+        db: String,
     },
 
     /// Prints version information.

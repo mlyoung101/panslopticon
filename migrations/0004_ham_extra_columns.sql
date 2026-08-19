@@ -1,3 +1,0 @@
-ALTER TABLE ham ADD COLUMN panslop_version STRING;
-ALTER TABLE ham ADD COLUMN origin_platform STRING;
-ALTER TABLE ham ADD COLUMN origin_src STRING;

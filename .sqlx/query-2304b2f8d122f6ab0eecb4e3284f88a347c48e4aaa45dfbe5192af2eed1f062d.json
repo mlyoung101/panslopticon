@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    INSERT INTO ham (url, date_added, score, panslop_version, origin_platform, origin_src)\n                    VALUES ($1, $2, $3, $4, $5, $6);\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamp",
+        "Float4",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2304b2f8d122f6ab0eecb4e3284f88a347c48e4aaa45dfbe5192af2eed1f062d"
+}

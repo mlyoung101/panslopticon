@@ -8,7 +8,7 @@ use indicatif::ProgressIterator;
 use lingua::{Language, LanguageDetectorBuilder};
 use regex::Regex;
 use regex_cache::LazyRegex;
-use sqlx::{Pool, Sqlite, SqlitePool};
+use sqlx::{PgPool, Pool, Postgres};
 use std::{
     collections::HashSet,
     ffi::OsStr,
@@ -195,7 +195,7 @@ fn process_files(
 pub async fn update_full_text(
     id: i64,
     repo: &GhLocalRepo,
-    db: &Pool<Sqlite>,
+    db: &Pool<Postgres>,
     ham: bool,
 ) -> color_eyre::Result<()> {
     let all_paths = repo.get_all_paths()?;
@@ -232,7 +232,7 @@ pub async fn update_full_text(
 
         if ham {
             sqlx::query!(
-                "INSERT INTO ham_full_text(id, file, text) VALUES (?, ?, ?);",
+                "INSERT INTO ham_full_text(id, file, text) VALUES ($1, $2, $3);",
                 id,
                 actual_path,
                 contents
@@ -241,7 +241,7 @@ pub async fn update_full_text(
             .await?;
         } else {
             sqlx::query!(
-                "INSERT INTO full_text(slop_id, file, text) VALUES (?, ?, ?);",
+                "INSERT INTO full_text(slop_id, file, text) VALUES ($1, $2, $3);",
                 id,
                 actual_path,
                 contents
@@ -255,8 +255,8 @@ pub async fn update_full_text(
 }
 
 /// Removes an item from the ingress queue
-async fn dequeue_item(id: i64, db: &Pool<Sqlite>) -> color_eyre::Result<()> {
-    let _ = sqlx::query!("DELETE FROM ingress WHERE id = ?;", id)
+async fn dequeue_item(id: i64, db: &Pool<Postgres>) -> color_eyre::Result<()> {
+    let _ = sqlx::query!("DELETE FROM ingress WHERE id = $1;", id)
         .execute(db)
         .await?;
     Ok(())
@@ -285,7 +285,7 @@ pub async fn analyse_one(
     config: &PanslopConfig,
     repo: &GhLocalRepo,
     debug: bool,
-    maybe_db: Option<&Pool<Sqlite>>,
+    maybe_db: Option<&Pool<Postgres>>,
     maybe_item: Option<&IngressItem>,
 ) -> color_eyre::Result<()> {
     let (score, detected_agents) = calculate_score(config, repo).await?;
@@ -310,7 +310,7 @@ pub async fn analyse_one(
         }
     }
 
-    let now = Utc::now();
+    let now = Utc::now().naive_utc();
 
     // was it slop?! the big decision!!
     if score >= config.scoring.threshold {
@@ -321,11 +321,11 @@ pub async fn analyse_one(
                 INSERT INTO slop
                     (url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform,
                      origin_src)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
             "#,
             item.url,
             now,
-            score,
+            score as f32,
             VERSION,
             now,
             "",
@@ -344,7 +344,7 @@ pub async fn analyse_one(
 
         for agent in detected_agents {
             sqlx::query!(
-                "INSERT INTO agents(slop_id, agent) VALUES (?, ?);",
+                "INSERT INTO agents(slop_id, agent) VALUES ($1, $2);",
                 id,
                 agent
             )
@@ -357,11 +357,11 @@ pub async fn analyse_one(
         info!("Repo '{}' is NOT slop", item.url);
         sqlx::query!(
             r#"
-                INSERT INTO not_slop (url, date_added, score) VALUES (?, ?, ?);
+                INSERT INTO not_slop (url, date_added, score) VALUES ($1, $2, $3);
             "#,
             item.url,
             now,
-            score
+            score as f32
         )
         .execute(db)
         .await?;
@@ -381,13 +381,13 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
     let url = format!("sqlite://{}", db.to_string_lossy());
-    let db = SqlitePool::connect(&url).await?;
+    let db = PgPool::connect(&url).await?;
 
     loop {
         let maybe_row = sqlx::query_as!(
             IngressItem,
             r#"
-        SELECT id, `url`, date_added, origin_platform, origin_src FROM ingress LIMIT 1;
+        SELECT id, url, date_added, origin_platform, origin_src FROM ingress LIMIT 1;
             "#
         )
         .fetch_one(&db)
@@ -441,7 +441,7 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
     let _config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
     let url = format!("sqlite://{}", db.to_string_lossy());
-    let db = SqlitePool::connect(&url).await?;
+    let db = PgPool::connect(&url).await?;
 
     let language_detector = LanguageDetectorBuilder::from_all_languages().build();
 
@@ -460,7 +460,7 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
             if let Some(language) = language_detector.detect_language_of(&item.text)
                 && language != Language::English {
                     sqlx::query!(
-                        "DELETE FROM full_text WHERE slop_id = ? AND file = ? AND text = ?;",
+                        "DELETE FROM full_text WHERE slop_id = $1 AND file = $2 AND text = $3;",
                         item.slop_id,
                         item.file,
                         item.text
@@ -488,7 +488,7 @@ pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
             if let Some(language) = language_detector.detect_language_of(&item.text)
                 && language != Language::English {
                     sqlx::query!(
-                        "DELETE FROM ham_full_text WHERE id = ? AND file = ? AND text = ?;",
+                        "DELETE FROM ham_full_text WHERE id = $1 AND file = $2 AND text = $3;",
                         item.id,
                         item.file,
                         item.text

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO full_text(slop_id, file, text) VALUES ($1, $2, $3);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e46ae80af92ba3f886abe56ad2fb13e2cb05159afd431f5c7372e5c3ad25f134"
+}

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ham_full_text(id, file, text) VALUES ($1, $2, $3);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f7793a669c9611c1f9c802c520d90faafc757696217f89ba42aad054854353ae"
+}

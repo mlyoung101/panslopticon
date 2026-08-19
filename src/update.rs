@@ -7,7 +7,7 @@ use std::{path::PathBuf, time::Duration};
 
 use chrono::Utc;
 use log::{info, warn};
-use sqlx::SqlitePool;
+use sqlx::{PgPool, Postgres};
 
 use crate::{
     repo::GhRemoteRepo,
@@ -25,7 +25,7 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
     let url = format!("sqlite://{}", db.to_string_lossy());
-    let db = SqlitePool::connect(&url).await?;
+    let db = PgPool::connect(&url).await?;
 
     // FIXME EXTREMELY UGLY CODE DUPLICATION RAHHHH
 
@@ -64,7 +64,8 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
                 info!("Still exists");
                 let now = Utc::now();
                 sqlx::query!(
-                    "UPDATE slop SET date_last_seen = ? WHERE id = ?;",
+                    "UPDATE slop SET date_last_seen = $1 WHERE id = $2;",
+                    // FIXME
                     now,
                     item.id
                 )
@@ -72,7 +73,7 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
                 .await?;
             } else {
                 warn!("No LONGER exists! Marking as dead.");
-                sqlx::query!("UPDATE slop SET dead = 1 WHERE id = ?", item.id)
+                sqlx::query!("UPDATE slop SET dead = 1 WHERE id = $1", item.id)
                     .execute(&db)
                     .await?;
             }
@@ -116,9 +117,9 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
 
             if repo.exists().await? {
                 info!("Still exists");
-                let now = Utc::now();
+                let now = Utc::now().naive_utc();
                 sqlx::query!(
-                    "UPDATE ham SET date_last_seen = ? WHERE id = ?;",
+                    "UPDATE ham SET date_last_seen = $1 WHERE id = $2;",
                     now,
                     item.id
                 )
@@ -126,7 +127,7 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
                 .await?;
             } else {
                 warn!("No LONGER exists! Marking as dead.");
-                sqlx::query!("UPDATE ham SET dead = 1 WHERE id = ?", item.id)
+                sqlx::query!("UPDATE ham SET dead = 1 WHERE id = $1", item.id)
                     .execute(&db)
                     .await?;
             }

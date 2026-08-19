@@ -1,12 +1,12 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "SELECT id FROM slop ORDER BY id DESC;",
   "describe": {
     "columns": [
       {
-        "name": "id",
         "ordinal": 0,
-        "type_info": "Integer",
+        "name": "id",
+        "type_info": "Int8",
         "origin": {
           "Table": {
             "table": "slop",
@@ -16,7 +16,7 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Left": []
     },
     "nullable": [
       false

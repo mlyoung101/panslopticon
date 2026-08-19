@@ -1,12 +1,12 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, origin_platform, origin_src, dead AS \"dead: _\", date_last_seen\n            FROM ham\n            ORDER BY RANDOM()\n            LIMIT 2000;\n        ",
   "describe": {
     "columns": [
       {
-        "name": "id",
         "ordinal": 0,
-        "type_info": "Integer",
+        "name": "id",
+        "type_info": "Int8",
         "origin": {
           "Table": {
             "table": "ham",
@@ -15,8 +15,8 @@
         }
       },
       {
-        "name": "url",
         "ordinal": 1,
+        "name": "url",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -26,9 +26,9 @@
         }
       },
       {
-        "name": "date_added",
         "ordinal": 2,
-        "type_info": "Text",
+        "name": "date_added",
+        "type_info": "Timestamp",
         "origin": {
           "Table": {
             "table": "ham",
@@ -37,9 +37,9 @@
         }
       },
       {
-        "name": "score",
         "ordinal": 3,
-        "type_info": "Float",
+        "name": "score",
+        "type_info": "Float4",
         "origin": {
           "Table": {
             "table": "ham",
@@ -48,8 +48,8 @@
         }
       },
       {
-        "name": "panslop_version",
         "ordinal": 4,
+        "name": "panslop_version",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -59,8 +59,8 @@
         }
       },
       {
-        "name": "origin_platform",
         "ordinal": 5,
+        "name": "origin_platform",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -70,8 +70,8 @@
         }
       },
       {
-        "name": "origin_src",
         "ordinal": 6,
+        "name": "origin_src",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -81,9 +81,9 @@
         }
       },
       {
-        "name": "dead: _",
         "ordinal": 7,
-        "type_info": "Integer",
+        "name": "dead: _",
+        "type_info": "Int8",
         "origin": {
           "Table": {
             "table": "ham",
@@ -92,8 +92,8 @@
         }
       },
       {
-        "name": "date_last_seen",
         "ordinal": 8,
+        "name": "date_last_seen",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -104,7 +104,7 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Left": []
     },
     "nullable": [
       false,

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO not_slop (url, date_added, score) VALUES ($1, $2, $3);\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamp",
+        "Float4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "76995133496330d759b15e5c65a7bbd2356c43726fa8c754132747e496b66515"
+}

@@ -1,12 +1,12 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "\n            SELECT slop_id, file, text FROM full_text ORDER BY RANDOM();\n        ",
   "describe": {
     "columns": [
       {
-        "name": "slop_id",
         "ordinal": 0,
-        "type_info": "Integer",
+        "name": "slop_id",
+        "type_info": "Int8",
         "origin": {
           "Table": {
             "table": "full_text",
@@ -15,8 +15,8 @@
         }
       },
       {
-        "name": "file",
         "ordinal": 1,
+        "name": "file",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -26,8 +26,8 @@
         }
       },
       {
-        "name": "text",
         "ordinal": 2,
+        "name": "text",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -38,7 +38,7 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Left": []
     },
     "nullable": [
       false,

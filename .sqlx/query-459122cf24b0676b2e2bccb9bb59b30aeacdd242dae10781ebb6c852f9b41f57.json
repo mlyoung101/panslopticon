@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE slop SET date_last_seen = $1 WHERE id = $2;",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamp",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "459122cf24b0676b2e2bccb9bb59b30aeacdd242dae10781ebb6c852f9b41f57"
+}

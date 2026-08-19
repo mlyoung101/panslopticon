@@ -8,7 +8,7 @@ use std::{collections::HashSet, path::PathBuf, time::Duration};
 use chrono::{DateTime, Utc};
 use log::{info, warn};
 use octocrab::models::Repository;
-use sqlx::{Pool, Sqlite, SqlitePool};
+use sqlx::{PgPool, Pool, Postgres};
 
 use crate::{
     analyser::{calculate_score, update_full_text},
@@ -19,15 +19,15 @@ use crate::{
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Checks if the given URL is in the not slop table (or the ham table)
-async fn is_definitely_not_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::Result<bool> {
+async fn is_definitely_not_slop(url: &String, db: &Pool<Postgres>) -> color_eyre::Result<bool> {
     let not_slop_result = sqlx::query!(
-        r#"SELECT COUNT(*) AS count FROM not_slop WHERE url = ?;"#,
+        r#"SELECT COUNT(*) AS count FROM not_slop WHERE url = $1;"#,
         url
     )
     .fetch_one(db)
     .await?;
 
-    let ham_result = sqlx::query!(r#"SELECT COUNT(*) AS count FROM ham WHERE url = ?;"#, url)
+    let ham_result = sqlx::query!(r#"SELECT COUNT(*) AS count FROM ham WHERE url = $1;"#, url)
         .fetch_one(db)
         .await?;
 
@@ -35,8 +35,8 @@ async fn is_definitely_not_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::
 }
 
 /// Checks if the given URL is already in the slop table
-async fn is_already_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::Result<bool> {
-    let result = sqlx::query!(r#"SELECT COUNT(*) AS count FROM slop WHERE url = ?;"#, url)
+async fn is_already_slop(url: &String, db: &Pool<Postgres>) -> color_eyre::Result<bool> {
+    let result = sqlx::query!(r#"SELECT COUNT(*) AS count FROM slop WHERE url = $1;"#, url)
         .fetch_one(db)
         .await?;
 
@@ -46,7 +46,7 @@ async fn is_already_slop(url: &String, db: &Pool<Sqlite>) -> color_eyre::Result<
 /// Ingresses one repo
 async fn do_ingress_repo(
     config: &PanslopConfig,
-    db: &Pool<Sqlite>,
+    db: &Pool<Postgres>,
     repo: &Repository,
     source: &String,
 ) -> color_eyre::Result<()> {
@@ -76,7 +76,7 @@ async fn do_ingress_repo(
     let insert = sqlx::query!(
         r#"
             INSERT INTO ingress(url, date_added, origin_platform, origin_src)
-            VALUES (?, ?, ?, ?);"#,
+            VALUES ($1, $2, $3, $4);"#,
         url.as_str(),
         now,
         "github",
@@ -95,7 +95,7 @@ async fn do_ingress_repo(
     Ok(())
 }
 
-pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
+pub async fn ingress_gh(config: PathBuf, db_url: String) -> color_eyre::Result<()> {
     info!(
         "Start GitHub ingress process. Config: {}, DB: {}",
         config.to_string_lossy(),
@@ -105,11 +105,8 @@ pub async fn ingress_gh(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
     let config_str = std::fs::read_to_string(config)?;
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-    // TODO auth, for nicer rate limits
     let api = octocrab::instance();
-
-    let url = format!("sqlite://{}", db.to_string_lossy());
-    let db = SqlitePool::connect(&url).await?;
+    let db = PgPool::connect(&db_url.clone()).await?;
 
     for topic in &config_parsed.ingress.gh_tags {
         info!("Query GitHub topic: {}", topic);
@@ -174,7 +171,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
     let api = octocrab::instance();
 
     let url = format!("sqlite://{}", db.to_string_lossy());
-    let db = SqlitePool::connect(&url).await?;
+    let db = PgPool::connect(&url).await?;
 
     let resolved_tags: HashSet<&String> = config_parsed
         .ingress
@@ -225,7 +222,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 sqlx::query!(
                 r#"
                     INSERT INTO ham (url, date_added, score, panslop_version, origin_platform, origin_src)
-                    VALUES (?, ?, ?, ?, ?, ?);
+                    VALUES ($1, $2, $3, $4, $5, $6);
                 "#,
                     url.to_string(),
                     now,

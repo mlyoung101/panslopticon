@@ -1,12 +1,12 @@
 {
-  "db_name": "SQLite",
-  "query": "\n        SELECT id, `url`, date_added, origin_platform, origin_src FROM ingress LIMIT 1;\n            ",
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id, url, date_added, origin_platform, origin_src FROM ingress LIMIT 1;\n            ",
   "describe": {
     "columns": [
       {
-        "name": "id",
         "ordinal": 0,
-        "type_info": "Integer",
+        "name": "id",
+        "type_info": "Int8",
         "origin": {
           "Table": {
             "table": "ingress",
@@ -15,8 +15,8 @@
         }
       },
       {
-        "name": "url",
         "ordinal": 1,
+        "name": "url",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -26,9 +26,9 @@
         }
       },
       {
-        "name": "date_added",
         "ordinal": 2,
-        "type_info": "Text",
+        "name": "date_added",
+        "type_info": "Timestamp",
         "origin": {
           "Table": {
             "table": "ingress",
@@ -37,8 +37,8 @@
         }
       },
       {
-        "name": "origin_platform",
         "ordinal": 3,
+        "name": "origin_platform",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -48,8 +48,8 @@
         }
       },
       {
-        "name": "origin_src",
         "ordinal": 4,
+        "name": "origin_src",
         "type_info": "Text",
         "origin": {
           "Table": {
@@ -60,7 +60,7 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Left": []
     },
     "nullable": [
       false,
@@ -70,5 +70,5 @@
       false
     ]
   },
-  "hash": "a066e6041351c201b663de588364a8e164fe170b7f2820be7837ce4ae17c8008"
+  "hash": "f4d46ef833a7691aec10a8ea2f4da012add0ee43833d3f70835513d41df78c81"
 }

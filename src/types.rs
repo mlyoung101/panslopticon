@@ -5,6 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::*;
 
@@ -28,10 +29,10 @@ pub struct IngressItem {
 pub struct SlopItem {
     pub id: i64,
     pub url: String,
-    pub date_added: String,
+    pub date_added: NaiveDateTime,
     pub score: f64,
     pub panslop_version: String,
-    pub date_last_seen: String,
+    pub date_last_seen: NaiveDateTime,
     pub dataset_path: Option<String>,
     pub origin_platform: String,
     pub origin_src: String,
