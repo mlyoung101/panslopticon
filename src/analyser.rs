@@ -147,7 +147,7 @@ fn process_commits(
 
     // parse each commit
     for commit in commits.iter().progress() {
-        let (score_update, detected) = process_commit(config, &commit)?;
+        let (score_update, detected) = process_commit(config, commit)?;
         score += score_update;
         detected_agents.extend(detected);
     }
