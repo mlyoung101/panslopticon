@@ -21,7 +21,7 @@ use log::{debug, info, warn};
 
 use crate::{
     repo::{GhLocalRepo, GhRemoteRepo},
-    types::{FullTextItem, HamFullTextItem, IngressItem, PanslopConfig},
+    types::{IngressItem, PanslopConfig},
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");

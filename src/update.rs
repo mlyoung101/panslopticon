@@ -7,7 +7,7 @@ use std::{path::PathBuf, time::Duration};
 
 use chrono::Utc;
 use log::{info, warn};
-use sqlx::{PgPool, Postgres};
+use sqlx::PgPool;
 
 use crate::{
     repo::GhRemoteRepo,

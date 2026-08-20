@@ -69,12 +69,12 @@ async fn do_ingress_repo(
         info!("Accept repo: {}", url);
     }
 
-    if is_definitely_not_slop(&url.to_string(), &db).await? {
+    if is_definitely_not_slop(&url.to_string(), db).await? {
         info!("Repo {} is in not_slop table, skipping", url);
         return Ok(());
     }
 
-    if is_already_slop(&url.to_string(), &db).await? {
+    if is_already_slop(&url.to_string(), db).await? {
         info!("Repo {} already considered slop", url);
         return Ok(());
     }
@@ -116,7 +116,7 @@ pub async fn ingress_gh(config: PathBuf, db_url: String) -> color_eyre::Result<(
 
     for topic in &config_parsed.ingress.gh_tags {
         info!("Query GitHub topic: {}", topic);
-        let source = format!("tag-{}", &topic);
+        let source = format!("tag-{}", topic);
 
         let result = api
             .search()
@@ -130,7 +130,7 @@ pub async fn ingress_gh(config: PathBuf, db_url: String) -> color_eyre::Result<(
             .await?;
 
         for repo in &result.items {
-            do_ingress_repo(&config_parsed, &db, &repo, &source).await?;
+            do_ingress_repo(&config_parsed, &db, repo, &source).await?;
         }
 
         info!("Waiting for rate limit...");
@@ -152,7 +152,7 @@ pub async fn ingress_gh(config: PathBuf, db_url: String) -> color_eyre::Result<(
             .await?;
 
         for repo in &result.items {
-            do_ingress_repo(&config_parsed, &db, &repo, &"broad_search".to_string()).await?;
+            do_ingress_repo(&config_parsed, &db, repo, &"broad_search".to_string()).await?;
         }
 
         info!("Waiting for rate limit...");

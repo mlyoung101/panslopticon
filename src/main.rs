@@ -99,13 +99,13 @@ async fn main() -> color_eyre::Result<()> {
     match args.command {
         Commands::GHIngress { config } => ingress::ingress_gh(config, db_url).await?,
         Commands::Analyse { config } => analyser::analyse_all(config, db_url).await?,
-        Commands::AnalyseOne { config , repo } => {
+        Commands::AnalyseOne { config, repo } => {
             let config_str = std::fs::read_to_string(config)?;
             let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
             let local_repo = GhRemoteRepo::new(repo).clone().await?;
             analyser::analyse_one(&config_parsed, &local_repo, true, None, None).await?;
         }
-        Commands::Cleanup { config } => todo!(),
+        Commands::Cleanup { config: _ } => todo!(),
         Commands::UpdateStats { config } => update::update_all(config, db_url).await?,
         Commands::HamIngress { config } => ingress::ingress_ham(config, db_url).await?,
         Commands::Version {} => println!(

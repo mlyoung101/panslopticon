@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::*;
 
