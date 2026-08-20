@@ -26,9 +26,6 @@ enum Commands {
     GHIngress {
         /// Config TOML path
         config: PathBuf,
-
-        /// Database URL
-        db: String,
     },
 
     /// Finds "ham" - good, non AI data
@@ -36,9 +33,6 @@ enum Commands {
     HamIngress {
         /// Config TOML path
         config: PathBuf,
-
-        /// Database URL
-        db: String,
     },
 
     /// Analyse all previously ingressed data
@@ -46,9 +40,6 @@ enum Commands {
     Analyse {
         /// Config TOML path
         config: PathBuf,
-
-        /// Database URL
-        db: String,
     },
 
     /// Analyse a single repository (for debugging)
@@ -57,7 +48,7 @@ enum Commands {
         /// Config TOML path
         config: PathBuf,
 
-        /// Repo URL
+        /// URL to repo to analyse
         repo: String,
     },
 
@@ -66,9 +57,6 @@ enum Commands {
     UpdateStats {
         /// Config TOML path
         config: PathBuf,
-
-        /// Database URL
-        db: String,
     },
 
     /// Runs a particular cleanup task that's hardcoded at the time, and hardcoded in
@@ -76,9 +64,6 @@ enum Commands {
     Cleanup {
         /// Config TOML path
         config: PathBuf,
-
-        /// Database URL
-        db: String,
     },
 
     /// Prints version information.
@@ -108,18 +93,21 @@ async fn main() -> color_eyre::Result<()> {
         .install_default()
         .expect("failed to install TLS provider");
 
+    dotenvy::dotenv()?;
+    let db_url = std::env::var("DATABASE_URL")?;
+
     match args.command {
-        Commands::GHIngress { config, db } => ingress::ingress_gh(config, db).await?,
-        Commands::Analyse { config, db } => analyser::analyse_all(config, db).await?,
-        Commands::AnalyseOne { config, repo } => {
+        Commands::GHIngress { config } => ingress::ingress_gh(config, db_url).await?,
+        Commands::Analyse { config } => analyser::analyse_all(config, db_url).await?,
+        Commands::AnalyseOne { config , repo } => {
             let config_str = std::fs::read_to_string(config)?;
             let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
             let local_repo = GhRemoteRepo::new(repo).clone().await?;
             analyser::analyse_one(&config_parsed, &local_repo, true, None, None).await?;
         }
-        Commands::Cleanup { config, db } => analyser::cleanup_all(config, db).await?,
-        Commands::UpdateStats { config, db } => update::update_all(config, db).await?,
-        Commands::HamIngress { config, db } => ingress::ingress_ham(config, db).await?,
+        Commands::Cleanup { config } => todo!(),
+        Commands::UpdateStats { config } => update::update_all(config, db_url).await?,
+        Commands::HamIngress { config } => ingress::ingress_ham(config, db_url).await?,
         Commands::Version {} => println!(
             "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://forgejo.mlyoung.cool/mel/panslopticon",
             VERSION

@@ -370,18 +370,17 @@ pub async fn analyse_one(
     Ok(())
 }
 
-pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
+pub async fn analyse_all(config: PathBuf, db_url: String) -> color_eyre::Result<()> {
     info!(
-        "Start analysis of all ingress items. Config: {}, DB: {}",
+        "Start analysis of all ingress items. Config: {}, DB URL: {}",
         config.to_string_lossy(),
-        db.to_string_lossy()
+        db_url
     );
 
     let config_str = std::fs::read_to_string(config)?;
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-    let url = format!("sqlite://{}", db.to_string_lossy());
-    let db = PgPool::connect(&url).await?;
+    let db = PgPool::connect(&db_url.clone()).await?;
 
     loop {
         let maybe_row = sqlx::query_as!(
@@ -425,80 +424,6 @@ pub async fn analyse_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 break;
             }
         }
-    }
-
-    Ok(())
-}
-
-pub async fn cleanup_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
-    info!(
-        "Start cleanup of all slop items to remove non-English languages. Config: {}, DB: {}",
-        config.to_string_lossy(),
-        db.to_string_lossy()
-    );
-
-    let config_str = std::fs::read_to_string(config)?;
-    let _config_parsed: PanslopConfig = toml::from_str(&config_str)?;
-
-    let url = format!("sqlite://{}", db.to_string_lossy());
-    let db = PgPool::connect(&url).await?;
-
-    let language_detector = LanguageDetectorBuilder::from_all_languages().build();
-
-    {
-        let all_full_text = sqlx::query_as!(
-            FullTextItem,
-            r#"
-            SELECT slop_id, file, text FROM full_text ORDER BY RANDOM();
-        "#
-        )
-        .fetch_all(&db)
-        .await?;
-
-        let mut removed = 0;
-        for item in all_full_text.iter().progress() {
-            if let Some(language) = language_detector.detect_language_of(&item.text)
-                && language != Language::English {
-                    sqlx::query!(
-                        "DELETE FROM full_text WHERE slop_id = $1 AND file = $2 AND text = $3;",
-                        item.slop_id,
-                        item.file,
-                        item.text
-                    )
-                    .execute(&db)
-                    .await?;
-                    removed += 1;
-                }
-        }
-        info!("Removed {} non-English files from slop", removed);
-    }
-
-    {
-        let all_full_text = sqlx::query_as!(
-            HamFullTextItem,
-            r#"
-            SELECT id, file, text FROM ham_full_text ORDER BY RANDOM();
-        "#
-        )
-        .fetch_all(&db)
-        .await?;
-
-        let mut removed = 0;
-        for item in all_full_text.iter().progress() {
-            if let Some(language) = language_detector.detect_language_of(&item.text)
-                && language != Language::English {
-                    sqlx::query!(
-                        "DELETE FROM ham_full_text WHERE id = $1 AND file = $2 AND text = $3;",
-                        item.id,
-                        item.file,
-                        item.text
-                    )
-                    .execute(&db)
-                    .await?;
-                    removed += 1;
-                }
-        }
-        info!("Removed {} non-English files from ham", removed);
     }
 
     Ok(())

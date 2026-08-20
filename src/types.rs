@@ -20,7 +20,7 @@ pub enum Platform {
 pub struct IngressItem {
     pub id: i64,
     pub url: String,
-    pub date_added: String,
+    pub date_added: NaiveDateTime,
     pub origin_platform: String,
     pub origin_src: String,
 }
@@ -50,14 +50,14 @@ pub struct SlopItem {
 pub struct HamItem {
     pub id: i64,
     pub url: Option<String>,
-    pub date_added: Option<String>,
+    pub date_added: NaiveDateTime,
     pub score: f64,
     pub panslop_version: Option<String>,
     pub origin_platform: Option<String>,
     pub origin_src: Option<String>,
     #[sqlx(try_from = "i64")]
     pub dead: bool,
-    pub date_last_seen: Option<String>,
+    pub date_last_seen: NaiveDateTime,
 }
 
 #[derive(Debug, FromRow, Clone)]

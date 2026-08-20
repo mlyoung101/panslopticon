@@ -14,18 +14,17 @@ use crate::{
     types::{HamItem, PanslopConfig, SlopItem},
 };
 
-pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
+pub async fn update_all(config: PathBuf, db_url: String) -> color_eyre::Result<()> {
     info!(
-        "Start update of all existing items. Config: {}, DB: {}",
+        "Start update of all existing items. Config: {}, DB URL: {}",
         config.to_string_lossy(),
-        db.to_string_lossy()
+        db_url
     );
 
     let config_str = std::fs::read_to_string(config)?;
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-    let url = format!("sqlite://{}", db.to_string_lossy());
-    let db = PgPool::connect(&url).await?;
+    let db = PgPool::connect(&db_url.clone()).await?;
 
     // FIXME EXTREMELY UGLY CODE DUPLICATION RAHHHH
 
@@ -62,10 +61,9 @@ pub async fn update_all(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> 
 
             if repo.exists().await? {
                 info!("Still exists");
-                let now = Utc::now();
+                let now = Utc::now().naive_utc();
                 sqlx::query!(
                     "UPDATE slop SET date_last_seen = $1 WHERE id = $2;",
-                    // FIXME
                     now,
                     item.id
                 )

@@ -94,7 +94,7 @@
       {
         "ordinal": 8,
         "name": "date_last_seen",
-        "type_info": "Text",
+        "type_info": "Timestamp",
         "origin": {
           "Table": {
             "table": "ham",

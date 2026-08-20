@@ -25,22 +25,28 @@ async fn is_definitely_not_slop(url: &String, db: &Pool<Postgres>) -> color_eyre
         url
     )
     .fetch_one(db)
-    .await?;
+    .await?
+    .count
+    .expect("no count for not_slop");
 
     let ham_result = sqlx::query!(r#"SELECT COUNT(*) AS count FROM ham WHERE url = $1;"#, url)
         .fetch_one(db)
-        .await?;
+        .await?
+        .count
+        .expect("no count for ham");
 
-    Ok(not_slop_result.count > 0 || ham_result.count > 0)
+    Ok(not_slop_result > 0 || ham_result > 0)
 }
 
 /// Checks if the given URL is already in the slop table
 async fn is_already_slop(url: &String, db: &Pool<Postgres>) -> color_eyre::Result<bool> {
     let result = sqlx::query!(r#"SELECT COUNT(*) AS count FROM slop WHERE url = $1;"#, url)
         .fetch_one(db)
-        .await?;
+        .await?
+        .count
+        .expect("no count for slop");
 
-    Ok(result.count > 0)
+    Ok(result > 0)
 }
 
 /// Ingresses one repo
@@ -50,7 +56,7 @@ async fn do_ingress_repo(
     repo: &Repository,
     source: &String,
 ) -> color_eyre::Result<()> {
-    let now = Utc::now();
+    let now = Utc::now().naive_utc();
     let url = repo.html_url.as_ref().expect("no HTML URL");
     let creation_date = repo.created_at.expect("no creation date");
     let cutoff = DateTime::parse_from_rfc2822(&config.ingress.gh_date_cutoff)?;
@@ -97,9 +103,9 @@ async fn do_ingress_repo(
 
 pub async fn ingress_gh(config: PathBuf, db_url: String) -> color_eyre::Result<()> {
     info!(
-        "Start GitHub ingress process. Config: {}, DB: {}",
+        "Start GitHub ingress process. Config: {}, DB URL: {}",
         config.to_string_lossy(),
-        db.to_string_lossy()
+        db_url
     );
 
     let config_str = std::fs::read_to_string(config)?;
@@ -157,21 +163,19 @@ pub async fn ingress_gh(config: PathBuf, db_url: String) -> color_eyre::Result<(
 }
 
 /// Tries to find "good" readmes for the "ham" dataset
-pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()> {
+pub async fn ingress_ham(config: PathBuf, db_url: String) -> color_eyre::Result<()> {
     info!(
-        "Start GitHub ham ingress process. Config: {}, DB: {}",
+        "Start GitHub ham ingress process. Config: {}, DB URL: {}",
         config.to_string_lossy(),
-        db.to_string_lossy()
+        db_url
     );
 
     let config_str = std::fs::read_to_string(config)?;
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
-    // TODO auth, for nicer rate limits
     let api = octocrab::instance();
 
-    let url = format!("sqlite://{}", db.to_string_lossy());
-    let db = PgPool::connect(&url).await?;
+    let db = PgPool::connect(&db_url.clone()).await?;
 
     let resolved_tags: HashSet<&String> = config_parsed
         .ingress
@@ -194,7 +198,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
             .await?;
 
         for repo in result.items {
-            let now = Utc::now();
+            let now = Utc::now().naive_utc();
             let url = repo.html_url.expect("no HTML URL");
 
             if is_already_slop(&url.to_string(), &db).await? {
@@ -226,7 +230,7 @@ pub async fn ingress_ham(config: PathBuf, db: PathBuf) -> color_eyre::Result<()>
                 "#,
                     url.to_string(),
                     now,
-                    score,
+                    score as f32,
                     VERSION,
                     "github",
                     format!("tag-{}", topic)
