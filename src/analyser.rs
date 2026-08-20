@@ -119,6 +119,9 @@ fn process_commit(
 
         let matches = regex.captures_iter(commit).count();
         if matches > 0 {
+            if !detected_agents.contains(agent) {
+                debug!("Detected agent: '{}' via commit", agent);
+            }
             detected_agents.insert(agent.to_string());
         }
         score += (matches as f64) * config.scoring.ai_commit;
@@ -140,13 +143,11 @@ fn process_commits(
     let mut detected_agents: HashSet<String> = HashSet::new();
 
     info!("Now processing commits...");
-    let commits = repo.get_commit_hashes(2000)?;
+    let commits = repo.get_commit_messages(2000)?;
 
     // parse each commit
-    for hash in commits.iter().progress() {
-        let msg = repo.get_commit_message(hash)?;
-
-        let (score_update, detected) = process_commit(config, &msg)?;
+    for commit in commits.iter().progress() {
+        let (score_update, detected) = process_commit(config, &commit)?;
         score += score_update;
         detected_agents.extend(detected);
     }

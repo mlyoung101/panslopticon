@@ -5,7 +5,8 @@
 
 use std::{fs, io, path::PathBuf};
 
-use log::info;
+use git2::{Repository, Sort};
+use log::{debug, info};
 use reqwest::Client;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
@@ -54,10 +55,10 @@ impl GhRemoteRepo {
 
     pub async fn exists(&self) -> color_eyre::Result<bool> {
         let user_agent = format!(
-            "Mozilla/5.0 (compatible; Panslopticon-Update/{}; +https://codeberg.org/melyoung/panslopticon)",
+            "Mozilla/5.0 (compatible; Panslopticon-Update/{}; +https://forgejo.mlyoung.cool/mel/panslopticon)",
             VERSION
         );
-        let policy = ExponentialBackoff::builder().build_with_max_retries(5);
+        let policy = ExponentialBackoff::builder().build_with_max_retries(10);
 
         // original reqwest client
         let reqwest_client = Client::builder().user_agent(user_agent).build()?;
@@ -80,48 +81,30 @@ impl GhLocalRepo {
     //     Self { path }
     // }
 
-    pub fn get_commit_hashes(&self, max: u32) -> color_eyre::Result<Vec<String>> {
-        // git --no-pager -C /home/mel/workspace/slop/devwebui log
-        // find all commits
-        let stdout = Exec::cmd("git")
-            .arg("--no-pager")
-            .arg("-C")
-            .arg(self.path.path().to_string_lossy().to_string())
-            .arg("log")
-            .arg("--pretty=oneline")
-            .checked()
-            .capture()?
-            .stdout;
+    pub fn get_commit_messages(&self, max: u32) -> color_eyre::Result<Vec<String>> {
+        let path = format!("{}/.git", self.path.path().to_string_lossy());
+        debug!("Get commits for: {}", path);
+        let repo = Repository::open(&path)?;
+        let mut revwalk = repo.revwalk()?;
+        revwalk.set_sorting(Sort::TIME )?;
+        // this one is EXTREMELY important!! otherwise the revwalk does NOTHING!!
+        revwalk.push_head()?;
 
-        let commits = String::from_utf8_lossy(&stdout);
-        Ok(commits
-            .lines()
-            .map(|x| x.to_string())
-            .take(max as usize)
-            .map(|x| x.split(" ").take(1).collect())
-            .collect())
-    }
+        let mut out: Vec<String> = Vec::new();
+        let mut i = 0;
 
-    pub fn get_commit_message(&self, hash: &String) -> color_eyre::Result<String> {
-        // get the message for the commit
-        // git --no-pager -C /home/mel/workspace/slop/devwebui log --format=%B -n 1 8866e9209648b45cf2dfc438ad79b1a2721ca433
-        // https://stackoverflow.com/a/3357357/5007892
-        let msg = String::from_utf8_lossy(
-            &Exec::cmd("git")
-                .arg("--no-pager")
-                .arg("-C")
-                .arg(self.path.path().to_string_lossy().to_string())
-                .arg("log")
-                .arg("--format=%B")
-                .arg("-n")
-                .arg("1")
-                .arg(hash)
-                .checked()
-                .capture()?
-                .stdout,
-        )
-        .to_string();
-        Ok(msg)
+        for c in revwalk {
+            let commit = repo.find_commit(c?)?;
+            let author = commit.author().to_string();
+            let msg = commit.message()?;
+            out.push(format!("{}\n{}", author, msg));
+            if i > max {
+                break;
+            }
+            i += 1;
+        }
+
+        Ok(out)
     }
 
     pub fn get_all_paths(&self) -> color_eyre::Result<Vec<PathBuf>> {
