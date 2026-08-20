@@ -227,7 +227,7 @@ pub async fn update_full_text(
             continue;
         };
         if language != Language::English {
-            warn!("File {} not in English, skipping", path_str);
+            warn!("File {} not in English (it is in {}), skipping", path_str, language.to_string());
             continue;
         }
 
@@ -317,12 +317,13 @@ pub async fn analyse_one(
     if score >= config.scoring.threshold {
         info!("Slop detected!! Repo: {}", item.url);
 
-        sqlx::query!(
+        let id = sqlx::query!(
             r#"
                 INSERT INTO slop
                     (url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform,
                      origin_src)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING id;
             "#,
             item.url,
             now,
@@ -333,15 +334,8 @@ pub async fn analyse_one(
             item.origin_platform,
             item.origin_src
         )
-        .execute(db)
-        .await?;
-
-        // what was the ID we just inserted?
-        // FIXME this seems stupid, can't we get it from the query above?
-        let id = sqlx::query!("SELECT id FROM slop ORDER BY id DESC;")
-            .fetch_one(db)
-            .await?
-            .id;
+        .fetch_one(db)
+        .await?.id;
 
         for agent in detected_agents {
             sqlx::query!(

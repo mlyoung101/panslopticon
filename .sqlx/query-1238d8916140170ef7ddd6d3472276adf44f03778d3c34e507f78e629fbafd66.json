@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    INSERT INTO ham (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen)\n                    VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "ham",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamp",
+        "Float4",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamp"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1238d8916140170ef7ddd6d3472276adf44f03778d3c34e507f78e629fbafd66"
+}

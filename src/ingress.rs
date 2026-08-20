@@ -186,16 +186,25 @@ pub async fn ingress_ham(config: PathBuf, db_url: String) -> color_eyre::Result<
     info!("Ham: {:?}", resolved_tags);
 
     for topic in &resolved_tags {
-        info!("Query GitHub topic: {}", topic);
-        let page = rand::random_range(1..25);
+        // this is because GH will only let us see the first 1000 items; we have to be a bit careful
+        let page = rand::random_range(1..10);
+        info!("Query GitHub topic: {} random page: {}", topic, page);
 
-        let result = api
+        let Ok(result) = api
             .search()
             .repositories(&format!("topic:{} stars:>90 created:<2022", topic))
             .sort("stars")
             .page(page as u32)
+            .per_page(100)
             .send()
-            .await?;
+            .await
+        else {
+            // GH probably was being a shitbag and refused to let us see this page, so just continue
+            warn!("Failed to process this tag (we probably requested too many pages), continuing");
+            continue;
+        };
+
+        info!("Retrieved {} items", result.items.len());
 
         for repo in result.items {
             let now = Utc::now().naive_utc();
@@ -207,7 +216,7 @@ pub async fn ingress_ham(config: PathBuf, db_url: String) -> color_eyre::Result<
             }
 
             if is_definitely_not_slop(&url.to_string(), &db).await? {
-                warn!("Repo {} already recorded, skipping", url);
+                warn!("Repo {} already recorded as ham or not_slop, skipping", url);
                 continue;
             }
 
@@ -223,26 +232,21 @@ pub async fn ingress_ham(config: PathBuf, db_url: String) -> color_eyre::Result<
             if score <= config_parsed.scoring.ham_threshold {
                 info!("Repo {} is confirmed ham, processing full text", url);
 
-                sqlx::query!(
+                let id = sqlx::query!(
                 r#"
-                    INSERT INTO ham (url, date_added, score, panslop_version, origin_platform, origin_src)
-                    VALUES ($1, $2, $3, $4, $5, $6);
+                    INSERT INTO ham (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;
                 "#,
                     url.to_string(),
                     now,
                     score as f32,
                     VERSION,
                     "github",
-                    format!("tag-{}", topic)
+                    format!("tag-{}", topic),
+                    now
                 )
-                .execute(&db)
-                .await?;
-
-                // what was the ID we just inserted?
-                let id = sqlx::query!("SELECT id FROM ham ORDER BY id DESC;")
-                    .fetch_one(&db)
-                    .await?
-                    .id;
+                .fetch_one(&db)
+                .await?.id;
 
                 let Ok(_) = update_full_text(id, &local, &db, true).await else {
                     warn!("Failed to update full text for ham repo: {}", url);
@@ -250,10 +254,30 @@ pub async fn ingress_ham(config: PathBuf, db_url: String) -> color_eyre::Result<
                 };
             } else {
                 warn!(
-                    "Ham repo {} is in fact slop!! (score={}), skipping",
+                    "Ham repo {} is in fact slop!! (score={}), adding to the slop table instead",
                     url, score
                 );
-                continue;
+
+                let id = sqlx::query!(
+                r#"
+                    INSERT INTO slop (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;
+                "#,
+                    url.to_string(),
+                    now,
+                    score as f32,
+                    VERSION,
+                    "github",
+                    format!("tag-{}", topic),
+                    now
+                )
+                .fetch_one(&db)
+                .await?.id;
+
+                let Ok(_) = update_full_text(id, &local, &db, true).await else {
+                    warn!("Failed to update full text for ham repo: {}", url);
+                    continue;
+                };
             }
         }
 
