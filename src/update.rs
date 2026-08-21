@@ -14,15 +14,15 @@ use crate::{
     types::{HamItem, PanslopConfig, SlopItem},
 };
 
-pub async fn update_all(config: PathBuf, db_url: String) -> color_eyre::Result<()> {
+pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Result<()> {
     info!(
         "Start update of all existing items. Config: {}, DB URL: {}",
-        config.to_string_lossy(),
+        config_path.to_string_lossy(),
         db_url
     );
 
-    let config_str = std::fs::read_to_string(config)?;
-    let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+    let config_str = std::fs::read_to_string(config_path)?;
+    let config: PanslopConfig = toml::from_str(&config_str)?;
 
     let db = PgPool::connect(&db_url.clone()).await?;
 
@@ -69,18 +69,25 @@ pub async fn update_all(config: PathBuf, db_url: String) -> color_eyre::Result<(
                 )
                 .execute(&db)
                 .await?;
+
+                if config.storage.download_repos {
+                    // lazy, dir must already exist
+                    let path =
+                        PathBuf::from(format!("{}/slop/{}", config.storage.dataset_path, item.id));
+                    if !path.exists() {
+                        repo.clone_to(path).await?;
+                    }
+                }
             } else {
                 warn!("No LONGER exists! Marking as dead.");
-                sqlx::query!("UPDATE slop SET dead = 1 WHERE id = $1", item.id)
+                sqlx::query!("UPDATE slop SET dead = TRUE WHERE id = $1", item.id)
                     .execute(&db)
                     .await?;
             }
 
             // wait for HIDDEN(!) rate limits
             info!("Waiting for rate limit...");
-            std::thread::sleep(Duration::from_millis(
-                config_parsed.ingress.gh_http_head_wait_ms,
-            ));
+            std::thread::sleep(Duration::from_millis(config.ingress.gh_http_head_wait_ms));
         }
     }
 
@@ -94,7 +101,7 @@ pub async fn update_all(config: PathBuf, db_url: String) -> color_eyre::Result<(
         HamItem,
         r#"
             SELECT
-        id, url, date_added, score, panslop_version, origin_platform, origin_src, dead AS "dead: _", date_last_seen
+        id, url, date_added, score, panslop_version, origin_platform, origin_src, dead, date_last_seen
             FROM ham
             ORDER BY RANDOM()
             LIMIT 2000;
@@ -123,18 +130,23 @@ pub async fn update_all(config: PathBuf, db_url: String) -> color_eyre::Result<(
                 )
                 .execute(&db)
                 .await?;
+
+                // lazy, dir must already exist
+                let path =
+                    PathBuf::from(format!("{}/ham/{}", config.storage.dataset_path, item.id));
+                if !path.exists() {
+                    repo.clone_to(path).await?;
+                }
             } else {
                 warn!("No LONGER exists! Marking as dead.");
-                sqlx::query!("UPDATE ham SET dead = 1 WHERE id = $1", item.id)
+                sqlx::query!("UPDATE ham SET dead = TRUE WHERE id = $1", item.id)
                     .execute(&db)
                     .await?;
             }
 
             // wait for HIDDEN(!) rate limits
             info!("Waiting for rate limit...");
-            std::thread::sleep(Duration::from_millis(
-                config_parsed.ingress.gh_http_head_wait_ms,
-            ));
+            std::thread::sleep(Duration::from_millis(config.ingress.gh_http_head_wait_ms));
         }
     }
 

@@ -5,6 +5,7 @@
 
 use std::{fs, io, path::PathBuf};
 
+use color_eyre::eyre::eyre;
 use git2::{Repository, Sort};
 use log::{debug, info};
 use reqwest::Client;
@@ -30,6 +31,7 @@ impl GhRemoteRepo {
         Self { url }
     }
 
+    /// Clones the repo to a temp dir
     pub async fn clone(&self) -> color_eyre::Result<GhLocalRepo> {
         let tempdir = tempfile::Builder::new()
             .prefix("panslop_ingress_")
@@ -51,6 +53,33 @@ impl GhRemoteRepo {
             .join()?;
 
         Ok(GhLocalRepo { path: tempdir })
+    }
+
+    /// Clones the repo to a specific directory based on its ID
+    pub async fn clone_to(&self, dir: PathBuf) -> color_eyre::Result<()> {
+        if dir.parent().is_none_or(|x| !x.is_dir()) {
+            return Err(eyre!(
+                "Specified path {} parent is not a dir",
+                dir.to_string_lossy().to_string()
+            ));
+        }
+
+        info!("Storing repo to {}...", dir.to_string_lossy().to_string());
+        // based on:
+        // https://codeberg.org/polyphony/repo-slopscore/src/branch/main/src/git/clone.rs#L39
+        Exec::cmd("git")
+            .arg("clone")
+            .arg("--sparse")
+            .arg("--single-branch")
+            .arg("--filter=tree:0")
+            .arg(format!("{}.git", self.url))
+            .arg(dir.to_string_lossy().to_string())
+            .checked()
+            .stdout(Redirection::Null)
+            .stderr(Redirection::Null)
+            .join()?;
+
+        Ok(())
     }
 
     pub async fn exists(&self) -> color_eyre::Result<bool> {
@@ -86,7 +115,7 @@ impl GhLocalRepo {
         debug!("Get commits for: {}", path);
         let repo = Repository::open(&path)?;
         let mut revwalk = repo.revwalk()?;
-        revwalk.set_sorting(Sort::TIME )?;
+        revwalk.set_sorting(Sort::TIME)?;
         // this one is EXTREMELY important!! otherwise the revwalk does NOTHING!!
         revwalk.push_head()?;
 

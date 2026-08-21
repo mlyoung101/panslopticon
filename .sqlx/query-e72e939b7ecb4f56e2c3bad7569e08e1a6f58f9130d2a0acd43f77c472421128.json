@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, origin_platform, origin_src, dead AS \"dead: _\", date_last_seen\n            FROM ham\n            ORDER BY RANDOM()\n            LIMIT 2000;\n        ",
+  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, origin_platform, origin_src, dead, date_last_seen\n            FROM ham\n            ORDER BY RANDOM()\n            LIMIT 2000;\n        ",
   "describe": {
     "columns": [
       {
@@ -82,8 +82,8 @@
       },
       {
         "ordinal": 7,
-        "name": "dead: _",
-        "type_info": "Int8",
+        "name": "dead",
+        "type_info": "Bool",
         "origin": {
           "Table": {
             "table": "ham",
@@ -118,5 +118,5 @@
       false
     ]
   },
-  "hash": "9ccea958df7d70e1242552f1fcc332687b0028cf08d82f51777e48cd41f53fa7"
+  "hash": "e72e939b7ecb4f56e2c3bad7569e08e1a6f58f9130d2a0acd43f77c472421128"
 }

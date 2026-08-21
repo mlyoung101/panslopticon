@@ -52,9 +52,9 @@ enum Commands {
         repo: String,
     },
 
-    /// Update statistics about existing repositories
+    /// Update existing repositories
     #[command()]
-    UpdateStats {
+    Update {
         /// Config TOML path
         config: PathBuf,
     },
@@ -106,7 +106,7 @@ async fn main() -> color_eyre::Result<()> {
             analyser::analyse_one(&config_parsed, &local_repo, true, None, None).await?;
         }
         Commands::Cleanup { config: _ } => todo!(),
-        Commands::UpdateStats { config } => update::update_all(config, db_url).await?,
+        Commands::Update { config } => update::update_all(config, db_url).await?,
         Commands::HamIngress { config } => ingress::ingress_ham(config, db_url).await?,
         Commands::Version {} => println!(
             "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://forgejo.mlyoung.cool/mel/panslopticon",

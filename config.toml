@@ -140,3 +140,11 @@ threshold = 75
 
 # Ham is considered to be less than or equal to this
 ham_threshold = 40
+
+# Storage dataset
+[storage]
+# Directory to store repos
+dataset_path = "/mnt/ext/panslopticon"
+
+# Keep downloaded repos?
+download_repos = true

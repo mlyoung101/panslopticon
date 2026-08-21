@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE slop SET dead = 1 WHERE id = $1",
+  "query": "UPDATE ham SET dead = TRUE WHERE id = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "405f7b808087aca04808b5d0b2d7494bbe4c1036fc1f367bad641691107e938f"
+  "hash": "2685f4c9e70b827481bdc20d2d62f545a7fc0bb85fcb44e3473ebba8e2ffdc94"
 }

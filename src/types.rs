@@ -36,7 +36,6 @@ pub struct SlopItem {
     pub dataset_path: Option<String>,
     pub origin_platform: String,
     pub origin_src: String,
-    #[sqlx(try_from = "i64")]
     pub dead: bool,
 }
 
@@ -55,7 +54,6 @@ pub struct HamItem {
     pub panslop_version: Option<String>,
     pub origin_platform: Option<String>,
     pub origin_src: Option<String>,
-    #[sqlx(try_from = "i64")]
     pub dead: bool,
     pub date_last_seen: NaiveDateTime,
 }
@@ -113,8 +111,15 @@ pub struct ConfigScoring {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConfigStorage {
+    pub dataset_path: String,
+    pub download_repos: bool
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PanslopConfig {
     pub detect: ConfigDetect,
     pub ingress: ConfigIngress,
     pub scoring: ConfigScoring,
+    pub storage: ConfigStorage,
 }
