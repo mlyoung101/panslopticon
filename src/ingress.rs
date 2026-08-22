@@ -260,8 +260,8 @@ pub async fn ingress_ham(config: PathBuf, db_url: String) -> color_eyre::Result<
 
                 let id = sqlx::query!(
                 r#"
-                    INSERT INTO slop (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;
+                    INSERT INTO slop (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen, dead)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING id;
                 "#,
                     url.to_string(),
                     now,
