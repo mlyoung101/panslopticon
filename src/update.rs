@@ -10,8 +10,10 @@ use log::{info, warn};
 use sqlx::PgPool;
 
 use crate::{
+    VERSION,
+    analyser::{calculate_score, update_full_text},
     repo::GhRemoteRepo,
-    types::{HamItem, PanslopConfig, SlopItem},
+    types::{HamItem, NotSlopItem, PanslopConfig, SlopItem},
 };
 
 pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Result<()> {
@@ -150,5 +152,85 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
         }
     }
 
+    Ok(())
+}
+
+pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Result<()> {
+    info!(
+        "Reconsider not_slop items. Config: {}, DB URL: {}",
+        config_path.to_string_lossy(),
+        db_url
+    );
+
+    let config_str = std::fs::read_to_string(config_path)?;
+    let config: PanslopConfig = toml::from_str(&config_str)?;
+
+    let db = PgPool::connect(&db_url.clone()).await?;
+
+    let not_slop = sqlx::query_as!(
+        NotSlopItem,
+        r#"
+            SELECT id, url, date_added, score
+            FROM not_slop
+            ORDER BY score DESC
+            LIMIT 2000;
+        "#
+    )
+    .fetch_all(&db)
+    .await?;
+
+    for item in &not_slop {
+        info!("Reconsider repo: {}, score: {}", &item.url, item.score);
+
+        let repo = GhRemoteRepo::new(item.url.clone()).clone().await?;
+
+        let (score, detected_agents) = calculate_score(&config, &repo).await?;
+
+        // FIXME BAD CODE DUPLICATION from analyser.rs
+        let now = Utc::now().naive_utc();
+
+        // was it slop?! the big decision!!
+        if score >= config.scoring.threshold {
+            info!("Slop detected!! Repo: {}", item.url);
+
+            let id = sqlx::query!(
+                r#"
+                    INSERT INTO slop
+                        (url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform,
+                         origin_src, dead)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)
+                    RETURNING id;
+                "#,
+                item.url,
+                now,
+                score as f32,
+                VERSION,
+                now,
+                "",
+                "github",
+                "reconsider_not_slop"
+            )
+            .fetch_one(&db)
+            .await?.id;
+
+            for agent in detected_agents {
+                sqlx::query!(
+                    "INSERT INTO agents(slop_id, agent) VALUES ($1, $2);",
+                    id,
+                    agent
+                )
+                .execute(&db)
+                .await?;
+            }
+
+            update_full_text(id, &repo, &db, false).await?;
+        } else {
+            info!("Repo '{}' is STILL NOT slop", &item.url.clone());
+        }
+
+        // wait for HIDDEN(!) rate limits
+        info!("Waiting for rate limit...");
+        std::thread::sleep(Duration::from_millis(config.ingress.gh_http_head_wait_ms));
+    }
     Ok(())
 }

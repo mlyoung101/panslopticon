@@ -282,6 +282,7 @@ pub async fn calculate_score(
     Ok((score, detected_agents))
 }
 
+/// Analyse a single repo. Returns true if it was slop.
 pub async fn analyse_one(
     config: &PanslopConfig,
     repo: &GhLocalRepo,

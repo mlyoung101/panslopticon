@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    INSERT INTO slop\n                        (url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform,\n                         origin_src, dead)\n                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)\n                    RETURNING id;\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "slop",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamp",
+        "Float4",
+        "Text",
+        "Timestamp",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a62d9a0c793737333fb6a0d84d613d2871cee766bd6c2e00b7a4a4d5f09c6ac2"
+}

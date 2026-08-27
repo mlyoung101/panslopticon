@@ -9,7 +9,7 @@ use clap::{Parser, Subcommand};
 use env_logger::{Builder, Env};
 use log::info;
 
-use crate::{repo::GhRemoteRepo, types::PanslopConfig};
+use crate::{repo::GhRemoteRepo, types::PanslopConfig, update::reconsider};
 
 pub mod analyser;
 pub mod ingress;
@@ -59,9 +59,9 @@ enum Commands {
         config: PathBuf,
     },
 
-    /// Runs a particular cleanup task that's hardcoded at the time, and hardcoded in
+    /// Reconsiders data in the not_slop table; useful if the scoring algorithm has been updated
     #[command()]
-    Cleanup {
+    Reconsider {
         /// Config TOML path
         config: PathBuf,
     },
@@ -105,7 +105,7 @@ async fn main() -> color_eyre::Result<()> {
             let local_repo = GhRemoteRepo::new(repo).clone().await?;
             analyser::analyse_one(&config_parsed, &local_repo, true, None, None).await?;
         }
-        Commands::Cleanup { config: _ } => todo!(),
+        Commands::Reconsider { config } => reconsider(config, db_url).await?,
         Commands::Update { config } => update::update_all(config, db_url).await?,
         Commands::HamIngress { config } => ingress::ingress_ham(config, db_url).await?,
         Commands::Version {} => println!(

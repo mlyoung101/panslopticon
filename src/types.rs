@@ -39,6 +39,14 @@ pub struct SlopItem {
     pub dead: bool,
 }
 
+#[derive(Debug, FromRow, Clone, Type)]
+pub struct NotSlopItem {
+    pub id: i64,
+    pub url: String,
+    pub date_added: NaiveDateTime,
+    pub score: f64,
+}
+
 // alright, bullshit #2 in the hell world that is sqlx
 // when we made the ham table, we forgot to make all the fields 'NOT NULL'
 // and unfortunately SQLite doesn't let us make a NULL column NOT NULL without completely redoing it
