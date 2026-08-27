@@ -17,7 +17,7 @@ use std::{
 };
 
 use lazy_static::lazy_static;
-use log::{debug, info, warn};
+use log::{debug, info, trace, warn};
 
 use crate::{
     repo::{GhLocalRepo, GhRemoteRepo},
@@ -49,7 +49,7 @@ fn compile_mega_regex(regexes: &Vec<String>) -> color_eyre::Result<LazyRegex> {
     }
     // the last character is a '|' which we don't want
     mega_regex.pop();
-    debug!("Mega regex: {}", mega_regex);
+    trace!("Compile mega regex: {}", mega_regex);
 
     Ok(LazyRegex::new(&mega_regex)?)
 }
@@ -121,6 +121,7 @@ fn process_commit(
         if matches > 0 {
             if !detected_agents.contains(agent) {
                 debug!("Detected agent: '{}' via commit", agent);
+                debug!("Commit was:\n{}", commit);
             }
             detected_agents.insert(agent.to_string());
         }

@@ -230,6 +230,9 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
             }
 
             update_full_text(id, local_repo, &db, false).await?;
+
+            // remove from not_slop
+            sqlx::query!("DELETE FROM not_slop WHERE id = $1;", id).execute(&db).await?;
         } else {
             info!("Repo '{}' is STILL NOT slop", &item.url.clone());
         }
