@@ -321,8 +321,8 @@ pub async fn analyse_one(
             r#"
                 INSERT INTO slop
                     (url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform,
-                     origin_src)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                     origin_src, dead)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)
                 RETURNING id;
             "#,
             item.url,
