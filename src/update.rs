@@ -78,6 +78,8 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
                         PathBuf::from(format!("{}/slop/{}", config.storage.dataset_path, item.id));
                     if !path.exists() {
                         repo.clone_to(path).await?;
+                    } else {
+                        info!("Repo already saved");
                     }
                 }
             } else {
@@ -85,11 +87,11 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
                 sqlx::query!("UPDATE slop SET dead = TRUE WHERE id = $1", item.id)
                     .execute(&db)
                     .await?;
-            }
 
-            // wait for HIDDEN(!) rate limits
-            info!("Waiting for rate limit...");
-            std::thread::sleep(Duration::from_millis(config.ingress.gh_http_head_wait_ms));
+                // we would be too fast, wait for rate limit
+                info!("Waiting for rate limit...");
+                std::thread::sleep(Duration::from_millis(config.ingress.gh_http_head_wait_ms));
+            }
         }
     }
 
@@ -138,17 +140,19 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
                     PathBuf::from(format!("{}/ham/{}", config.storage.dataset_path, item.id));
                 if !path.exists() {
                     repo.clone_to(path).await?;
+                } else {
+                    info!("Repo already saved");
                 }
             } else {
                 warn!("No LONGER exists! Marking as dead.");
                 sqlx::query!("UPDATE ham SET dead = TRUE WHERE id = $1", item.id)
                     .execute(&db)
                     .await?;
-            }
 
-            // wait for HIDDEN(!) rate limits
-            info!("Waiting for rate limit...");
-            std::thread::sleep(Duration::from_millis(config.ingress.gh_http_head_wait_ms));
+                // we would be too fast, wait for rate limit
+                info!("Waiting for rate limit...");
+                std::thread::sleep(Duration::from_millis(config.ingress.gh_http_head_wait_ms));
+            }
         }
     }
 
