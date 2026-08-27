@@ -182,9 +182,15 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
     for item in &not_slop {
         info!("Reconsider repo: {}, score: {}", &item.url, item.score);
 
-        let repo = GhRemoteRepo::new(item.url.clone()).clone().await?;
+        let repo = GhRemoteRepo::new(item.url.clone());
 
-        let (score, detected_agents) = calculate_score(&config, &repo).await?;
+        if !repo.exists().await? {
+            warn!("Repo no longer exists, skipping");
+            continue;
+        }
+
+        let local_repo = &repo.clone().await?;
+        let (score, detected_agents) = calculate_score(&config, local_repo).await?;
 
         // FIXME BAD CODE DUPLICATION from analyser.rs
         let now = Utc::now().naive_utc();
@@ -223,7 +229,7 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
                 .await?;
             }
 
-            update_full_text(id, &repo, &db, false).await?;
+            update_full_text(id, local_repo, &db, false).await?;
         } else {
             info!("Repo '{}' is STILL NOT slop", &item.url.clone());
         }
