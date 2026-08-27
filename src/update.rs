@@ -176,7 +176,7 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
         r#"
             SELECT id, url, date_added, score
             FROM not_slop
-            ORDER BY score DESC
+            ORDER BY RANDOM()
             LIMIT 2000;
         "#
     )
