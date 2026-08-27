@@ -35,7 +35,7 @@ lazy_static! {
 fn is_readme(path: &Path) -> bool {
     let local = path.to_str();
     if let Some(l) = local {
-        l.to_lowercase().contains("readme")
+        l.to_lowercase().contains("readme") && path.is_file()
     } else {
         false
     }
