@@ -316,7 +316,7 @@ pub async fn analyse_one(
     let now = Utc::now().naive_utc();
 
     // was it slop?! the big decision!!
-    if score >= config.scoring.threshold {
+    if score >= config.scoring.threshold && score.is_finite() {
         info!("Slop detected!! Repo: {}", item.url);
 
         let id = sqlx::query!(
