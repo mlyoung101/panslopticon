@@ -42,7 +42,6 @@ impl GhRemoteRepo {
         // https://codeberg.org/polyphony/repo-slopscore/src/branch/main/src/git/clone.rs#L39
         let result = Exec::cmd("git")
             .arg("clone")
-            .arg("--sparse")
             .arg("--single-branch")
             .arg("--filter=tree:0")
             .arg(format!("{}.git", self.url))
