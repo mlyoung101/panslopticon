@@ -35,7 +35,7 @@ impl GhRemoteRepo {
     pub async fn clone(&self) -> color_eyre::Result<GhLocalRepo> {
         let tempdir = tempfile::Builder::new()
             .prefix("panslop_ingress_")
-            .tempdir()?;
+            .tempdir_in("/var/tmp/")?;
 
         info!("Cloning...");
         // based on:
