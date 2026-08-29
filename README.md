@@ -36,10 +36,14 @@ referred to as "spam" in some places in the code (because we're building a class
 **Ham** refers to good-quality, human-authored repos of good standing. This is what we used to train the
 classifier on the opposite of slop.
 
+**Not Slop** in this codebase, counter-intuitively means content that we _think_ is not slop. If we are _sure_
+it's not slop (it has a very low score and was created before the cutoff date), it would instead be ham.
+
 ### Detection methodology
 Detection is configured through `config.toml`, though a number of regexes and other heuristics. The scoring
-system looks at the README contents, files in the repo (including gitignored files!) and commit authorship.
-All of these are considered "signals", it takes a number of signals to increase the score significantly.
+system looks at the README contents, creation date, files in the repo (including gitignored files!) and commit
+authorship. All of these are considered "signals", it takes a number of signals to increase the score
+significantly.
 
 Once the score is above a configurable threshold, the repo is considered slop.
 
@@ -50,12 +54,16 @@ most recently updated, with greater than 2 stars.
 **IngressHam:** Uses the GitHub API to query topics for repos, sorted by most stars, with >90 stars and
 created before 2022; picking a random page.
 
-**Analyse:** Runs once every day at 10pm AEDT. Visits the ingress queue and determines if repositories are
+**Analyse:** Runs once every day at ~10pm AEDT. Visits the ingress queue and determines if repositories are
 actually slop or not. If yes, they get added to the slop table and catalogued (e.g. by having their full text
 from all files archived). If no, they get added to the "not_slop" table and will not be visited again.
 
-**UpdateStats:** Runs once per day at 2pm AEDT. Looks through all existing slop repositories to check if they
+### Non-daily tasks
+**Update:** Looks through all existing slop repositories to check if they
 still exist and updates their stars and forks count.
+
+**Reconsider:** Reconsiders content in the `not_slop` table; useful if the classification algorithm has been
+updated to be more aggressive or thresholds have been changed.
 
 ## Spam/ham classifier
 Some classifiers are prototyped in Python to attempt to distinguish between human-written READMEs and slop

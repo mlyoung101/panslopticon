@@ -41,6 +41,15 @@ fn is_readme(path: &Path) -> bool {
     }
 }
 
+fn is_gitignore(path: &Path) -> bool {
+    let local = path.to_str();
+    if let Some(l) = local {
+        l.to_lowercase().contains(".gitignore") && path.is_file()
+    } else {
+        false
+    }
+}
+
 fn compile_mega_regex(regexes: &Vec<String>) -> color_eyre::Result<LazyRegex> {
     let mut mega_regex = String::new();
 
@@ -180,14 +189,24 @@ fn process_files(
         {
             // agent detected!
             info!(
-                "Detected agent {} in files by query {} in visible file",
+                "Detected agent '{}' in visible file list by query {}",
                 agent, regex
             );
             score += config.scoring.ai_file;
             detected_agents.insert(agent.to_string());
         }
 
-        // TODO process .gitignore and .dockerignore, with a separate function
+        for path in &all_paths {
+            if is_gitignore(path) {
+                let contents = fs::read_to_string(path)?;
+
+                if regex.is_match(&contents) {
+                    warn!("Detected agent '{}' in HIDDEN (gitignored) FILE by query {}", agent, regex);
+                    score += config.scoring.ai_file_hidden;
+                    detected_agents.insert(agent.to_string());
+                }
+            }
+        }
     }
 
     Ok((score, detected_agents))
@@ -391,7 +410,6 @@ pub async fn analyse_all(config: PathBuf, db_url: String) -> color_eyre::Result<
 
         match maybe_row {
             Ok(row) => {
-                info!("Try checkout: {}", row.url);
                 let remote_repo = GhRemoteRepo::new(row.url.clone());
                 if !remote_repo.exists().await? {
                     warn!("Repo {} no longer exists", remote_repo.url);

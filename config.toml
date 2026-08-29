@@ -129,8 +129,7 @@ readme_multiplier = 2000.0
 ai_file = 50.0
 
 # An AI file that **is** hidden, means the author intentionally is trying to hide it from us...
-# FIXME not currently implemented
-ai_file_hidden = 100.0
+ai_file_hidden = 250.0
 
 # This is high because it needs to weigh against the other scores, which are applied per commit
 excessively_long_readme = 15.0
