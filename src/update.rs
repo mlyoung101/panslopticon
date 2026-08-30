@@ -184,7 +184,7 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
     .await?;
 
     for item in &not_slop {
-        info!("Reconsider repo: {}, score: {}", &item.url, item.score);
+        info!("Reconsider repo: {}, score: {}", item.url, item.score);
 
         let repo = GhRemoteRepo::new(item.url.clone());
 
@@ -194,7 +194,9 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
         }
 
         let local_repo = &repo.clone().await?;
-        let (score, detected_agents) = calculate_score(&config, local_repo).await?;
+        let Some((score, detected_agents)) = calculate_score(&config, local_repo).await.ok() else {
+            continue;
+        };
 
         // FIXME BAD CODE DUPLICATION from analyser.rs
         let now = Utc::now().naive_utc();
@@ -204,7 +206,9 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
             info!("Slop detected!! Repo: {}", item.url);
 
             // remove from not_slop
-            sqlx::query!("DELETE FROM not_slop WHERE id = $1;", item.id).execute(&db).await?;
+            sqlx::query!("DELETE FROM not_slop WHERE id = $1;", item.id)
+                .execute(&db)
+                .await?;
 
             let id = sqlx::query!(
                 r#"
@@ -238,7 +242,7 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
 
             update_full_text(id, local_repo, &db, false).await?;
         } else {
-            info!("Repo '{}' is STILL NOT slop", &item.url.clone());
+            info!("Repo '{}' is STILL NOT slop", item.url.clone());
         }
 
         // wait for HIDDEN(!) rate limits

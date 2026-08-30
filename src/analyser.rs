@@ -247,7 +247,7 @@ pub async fn update_full_text(
             continue;
         };
         if language != Language::English {
-            warn!("File {} not in English (it is in {}), skipping", path_str, language.to_string());
+            warn!("File {} not in English (it is in {}), skipping", path_str, language);
             continue;
         }
 

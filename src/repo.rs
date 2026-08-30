@@ -7,7 +7,7 @@ use std::{fs, io, path::PathBuf};
 
 use color_eyre::eyre::eyre;
 use git2::{Repository, Sort};
-use log::{debug, error, info, warn};
+use log::{debug, error, info};
 use reqwest::Client;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
@@ -69,7 +69,7 @@ impl GhRemoteRepo {
             ));
         }
 
-        info!("Storing repo to {}...", dir.to_string_lossy().to_string());
+        info!("Storing repo to {}...", dir.to_string_lossy());
         // based on:
         // https://codeberg.org/polyphony/repo-slopscore/src/branch/main/src/git/clone.rs#L39
         let result = Exec::cmd("git")
