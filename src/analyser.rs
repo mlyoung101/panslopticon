@@ -201,7 +201,10 @@ fn process_files(
                 let contents = fs::read_to_string(path)?;
 
                 if regex.is_match(&contents) {
-                    warn!("Detected agent '{}' in HIDDEN (gitignored) FILE by query {}", agent, regex);
+                    warn!(
+                        "Detected agent '{}' in HIDDEN (gitignored) FILE by query {}",
+                        agent, regex
+                    );
                     score += config.scoring.ai_file_hidden;
                     detected_agents.insert(agent.to_string());
                 }
@@ -247,7 +250,10 @@ pub async fn update_full_text(
             continue;
         };
         if language != Language::English {
-            warn!("File {} not in English (it is in {}), skipping", path_str, language);
+            warn!(
+                "File {} not in English (it is in {}), skipping",
+                path_str, language
+            );
             continue;
         }
 
@@ -417,7 +423,14 @@ pub async fn analyse_all(config: PathBuf, db_url: String) -> color_eyre::Result<
                     continue;
                 }
 
-                let local_repo = remote_repo.clone().await?;
+                let Ok(local_repo) = remote_repo.clone().await else {
+                    warn!(
+                        "Failed to clone repo: {}. Removing from ingress queue.",
+                        row.url
+                    );
+                    dequeue_item(row.id, &db).await?;
+                    continue;
+                };
 
                 let result =
                     analyse_one(&config_parsed, &local_repo, false, Some(&db), Some(&row)).await;
