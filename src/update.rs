@@ -195,6 +195,7 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
 
         let local_repo = &repo.clone().await?;
         let Some((score, detected_agents)) = calculate_score(&config, local_repo).await.ok() else {
+            warn!("Failed to reconsider repo");
             continue;
         };
 

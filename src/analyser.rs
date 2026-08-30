@@ -402,7 +402,7 @@ pub async fn analyse_all(config: PathBuf, db_url: String) -> color_eyre::Result<
         let maybe_row = sqlx::query_as!(
             IngressItem,
             r#"
-        SELECT id, url, date_added, origin_platform, origin_src FROM ingress LIMIT 1;
+        SELECT id, url, date_added, origin_platform, origin_src FROM ingress ORDER BY id LIMIT 1;
             "#
         )
         .fetch_one(&db)
