@@ -29,6 +29,8 @@ readme_signals = [
     "(?i)bring-your-own",
     "(?i)early day.*(bug.*|feedback) welcome",
     "(?i)the point is",
+    "(?i)moving target",
+    "(?i)solo dev(eloper)?",
     # https://claudisms.ai/
     "(?i)where it gets interesting",
     "(?i)((and )?that matters)|this matters",
@@ -52,11 +54,13 @@ gemini = ["(?i)gemini (pro|flash)", "(?i)antigravity"]
 # NOTE: often the commits contain higher levels of slop
 generic = [
     "(--)|→|×|–|—|⸺|⸻", # emdash/unicode
-    "(?i)([0-9]+)?.*(tests )?(pass|passing)",
+    "(?i)([0-9]+)?.*(tests )?(pass|passing)", # often likes to brag about how many tests are passing
     "(?i)rebrand logo?",
     "(?i)belt-and-suspenders", # what the fuck does this even mean lmao; Claude-ism apparently
     "(?i)load-bearing",
     "(?i)no more .*\\.",
+    "(?i)moving target",
+    "(?i)(first|second|third|fourth)-pass",
     # https://claudisms.ai/
     "(?i)harness"
 ]
