@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, url, date_added, score\n            FROM not_slop\n            ORDER BY RANDOM()\n            LIMIT 2000;\n        ",
+  "query": "\n            SELECT id, url, date_added, score\n            FROM not_slop\n            WHERE score >= $1\n            ORDER BY RANDOM()\n            LIMIT 3000;\n        ",
   "describe": {
     "columns": [
       {
@@ -49,7 +49,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Float4"
+      ]
     },
     "nullable": [
       false,
@@ -58,5 +60,5 @@
       false
     ]
   },
-  "hash": "148e8aeda590a4b2af02b05df027226d2690f6dd405633f714244e0961f4427d"
+  "hash": "dbdd6107c39c9ee299f63b28cc0aed8299e3d74fa5cc073d05e777d36082e75a"
 }

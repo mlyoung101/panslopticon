@@ -169,6 +169,10 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
     let config_str = std::fs::read_to_string(config_path)?;
     let config: PanslopConfig = toml::from_str(&config_str)?;
 
+    // find items that are most likely to be considered slop; score is >= 75% of the threshold
+    let thresh = 0.75 * config.scoring.threshold;
+    info!("Considering items with score >= {}", thresh);
+
     let db = PgPool::connect(&db_url.clone()).await?;
 
     let not_slop = sqlx::query_as!(
@@ -176,9 +180,10 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
         r#"
             SELECT id, url, date_added, score
             FROM not_slop
+            WHERE score >= $1
             ORDER BY RANDOM()
-            LIMIT 2000;
-        "#
+            LIMIT 3000;
+        "#, thresh as f32
     )
     .fetch_all(&db)
     .await?;
