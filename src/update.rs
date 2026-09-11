@@ -135,13 +135,15 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
                 .execute(&db)
                 .await?;
 
-                // lazy, dir must already exist
-                let path =
-                    PathBuf::from(format!("{}/ham/{}", config.storage.dataset_path, item.id));
-                if !path.exists() {
-                    repo.clone_to(path).await?;
-                } else {
-                    info!("Repo already saved");
+                if config.storage.download_repos {
+                    // lazy, dir must already exist
+                    let path =
+                        PathBuf::from(format!("{}/ham/{}", config.storage.dataset_path, item.id));
+                    if !path.exists() {
+                        repo.clone_to(path).await?;
+                    } else {
+                        info!("Repo already saved");
+                    }
                 }
             } else {
                 warn!("No LONGER exists! Marking as dead.");
@@ -183,7 +185,8 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
             WHERE score >= $1
             ORDER BY RANDOM()
             LIMIT 3000;
-        "#, thresh as f32
+        "#,
+        thresh as f32
     )
     .fetch_all(&db)
     .await?;
