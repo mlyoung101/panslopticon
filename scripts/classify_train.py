@@ -3,7 +3,6 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import pickle
-import sqlite3
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -21,23 +20,25 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import tree
 from sklearn.decomposition import PCA
+import psycopg
 
 # based on: https://github.com/nadinejackson1/text-classification-naive-bayes/blob/main/main.ipynb
 
-LIMIT = 12_000
+LIMIT = 50_000
+
 
 def load_data() -> pd.DataFrame:
-    conn = sqlite3.connect("data/panslop.db")
-    spam = pd.read_sql_query(
-        f"SELECT text FROM full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
-    )
-    ham = pd.read_sql_query(
-        f"SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
-    )
-    conn.close()
+    with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
+        spam = pd.read_sql_query(
+            f"SELECT text FROM full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
+        )
+        ham = pd.read_sql_query(
+            f"SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
+        )
+        conn.close()
 
-    spam["label"] = "spam"
-    ham["label"] = "ham"
+        spam["label"] = "spam"
+        ham["label"] = "ham"
 
     return pd.concat([spam, ham], ignore_index=True)
 
