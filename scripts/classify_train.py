@@ -30,10 +30,10 @@ LIMIT = 50_000
 def load_data() -> pd.DataFrame:
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         spam = pd.read_sql_query(
-            f"SELECT text FROM full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
+            f"SELECT text FROM full_text WHERE LOWER(file) != 'contributing.md' ORDER BY RANDOM() LIMIT {LIMIT}", conn
         )
         ham = pd.read_sql_query(
-            f"SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
+            f"SELECT text FROM ham_full_text WHERE LOWER(file) != 'contributing.md' ORDER BY RANDOM() LIMIT {LIMIT}", conn
         )
         conn.close()
 
