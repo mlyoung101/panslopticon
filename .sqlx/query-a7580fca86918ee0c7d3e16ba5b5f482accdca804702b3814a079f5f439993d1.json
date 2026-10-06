@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, url, date_added, score\n            FROM not_slop\n            WHERE score >= $1\n            ORDER BY RANDOM()\n            LIMIT 3000;\n        ",
+  "query": "\n            SELECT id, url, date_added, score\n            FROM not_slop\n            WHERE score >= $1 AND NOT did_reconsider\n            ORDER BY RANDOM();\n        ",
   "describe": {
     "columns": [
       {
@@ -60,5 +60,5 @@
       false
     ]
   },
-  "hash": "dbdd6107c39c9ee299f63b28cc0aed8299e3d74fa5cc073d05e777d36082e75a"
+  "hash": "a7580fca86918ee0c7d3e16ba5b5f482accdca804702b3814a079f5f439993d1"
 }

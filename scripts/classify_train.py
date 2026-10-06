@@ -30,10 +30,10 @@ LIMIT = 50_000
 def load_data() -> pd.DataFrame:
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         spam = pd.read_sql_query(
-            f"SELECT text FROM full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
+            f"SELECT text FROM full_text WHERE LOWER(file) != 'contributing.md' ORDER BY RANDOM() LIMIT {LIMIT}", conn
         )
         ham = pd.read_sql_query(
-            f"SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT {LIMIT}", conn
+            f"SELECT text FROM ham_full_text WHERE LOWER(file) != 'contributing.md' ORDER BY RANDOM() LIMIT {LIMIT}", conn
         )
         conn.close()
 
@@ -65,6 +65,45 @@ def important_features(vectorizer, classifier, n=20):
 
     for coef, feat in topn_class2:
         print(f"{class_labels[1]} {coef:.4f} {feat}")
+
+# https://gist.github.com/Lorenzoantonelli/40454798ae53386a1d5b9c8bb60664d5
+def report_to_latex(report):
+    if report[0] == '\n':
+        report = report[1:]
+    if report[-1] == '\n':
+        report = report[:-1]
+
+    lines = report.split('\n')
+
+    header = ["\\begin{table}",
+              "\\caption{Latex Table from Classification Report}",
+              "\\label{table:classification:report}",
+              "\\centering",
+              "\\begin{tabular}{c c c c r}",
+              "& Precision & Recall & F-score & Support",
+              "\\\\"]
+
+    body = []
+    for line in lines[2:-4]:
+        row = line.split()
+        if len(row) == 5:
+            body.append(" & ".join(row) + "\\\\")
+
+    body.append("\\\\")
+
+    footer = []
+    for line in lines[-3:]:
+        row = line.split()
+        if len(row) == 3:
+            footer.append("{} & & & {} & {}\\\\".format(*row))
+        elif len(row) == 6:
+            footer.append("{} {} & {} & {} & {} & {}\\\\".format(*row))
+
+    footer.extend(["\\end{tabular}", "\\end{table}"])
+
+    latex_table = '\n'.join(header + body + footer)
+
+    return latex_table
 
 
 def train():
@@ -149,6 +188,7 @@ def train():
         report = classification_report(y_test, y_pred)
 
         rich.print(f"[bold red]Classification report for {name}:[/bold red]\n{report}")
+        print(report_to_latex(report))
         print()
 
         with open(f"data/classifier_{type(classifier).__name__}.dat", "wb") as f:

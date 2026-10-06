@@ -172,7 +172,7 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
     let config: PanslopConfig = toml::from_str(&config_str)?;
 
     // find items that are most likely to be considered slop; score is >= 75% of the threshold
-    let thresh = 0.75 * config.scoring.threshold;
+    let thresh = 0.70 * config.scoring.threshold;
     info!("Considering items with score >= {}", thresh);
 
     let db = PgPool::connect(&db_url.clone()).await?;
@@ -182,9 +182,8 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
         r#"
             SELECT id, url, date_added, score
             FROM not_slop
-            WHERE score >= $1
-            ORDER BY RANDOM()
-            LIMIT 3000;
+            WHERE score >= $1 AND NOT did_reconsider
+            ORDER BY RANDOM();
         "#,
         thresh as f32
     )
@@ -252,6 +251,12 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
             update_full_text(id, local_repo, &db, false).await?;
         } else {
             info!("Repo '{}' is STILL NOT slop", item.url.clone());
+            sqlx::query!(
+                "UPDATE not_slop SET did_reconsider = TRUE WHERE id = $1",
+                item.id
+            )
+            .execute(&db)
+            .await?;
         }
 
         // wait for HIDDEN(!) rate limits
