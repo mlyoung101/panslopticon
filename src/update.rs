@@ -45,7 +45,7 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
         dead AS "dead: _"
             FROM slop
             ORDER BY RANDOM()
-            LIMIT 2000;
+            LIMIT 5000;
         "#
     )
     .fetch_all(&db)
@@ -108,7 +108,7 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
         id, url, date_added, score, panslop_version, origin_platform, origin_src, dead, date_last_seen
             FROM ham
             ORDER BY RANDOM()
-            LIMIT 2000;
+            LIMIT 5000;
         "#
         )
         .fetch_all(&db)

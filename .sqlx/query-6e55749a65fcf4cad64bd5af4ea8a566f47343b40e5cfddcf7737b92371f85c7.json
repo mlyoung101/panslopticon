@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src,\n        dead AS \"dead: _\"\n            FROM slop\n            ORDER BY RANDOM()\n            LIMIT 2000;\n        ",
+  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, origin_platform, origin_src, dead, date_last_seen\n            FROM ham\n            ORDER BY RANDOM()\n            LIMIT 5000;\n        ",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Int8",
         "origin": {
           "Table": {
-            "table": "slop",
+            "table": "ham",
             "name": "id"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "slop",
+            "table": "ham",
             "name": "url"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Timestamp",
         "origin": {
           "Table": {
-            "table": "slop",
+            "table": "ham",
             "name": "date_added"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Float4",
         "origin": {
           "Table": {
-            "table": "slop",
+            "table": "ham",
             "name": "score"
           }
         }
@@ -53,63 +53,52 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "slop",
+            "table": "ham",
             "name": "panslop_version"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "date_last_seen",
-        "type_info": "Timestamp",
-        "origin": {
-          "Table": {
-            "table": "slop",
-            "name": "date_last_seen"
-          }
-        }
-      },
-      {
-        "ordinal": 6,
-        "name": "dataset_path",
-        "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "slop",
-            "name": "dataset_path"
-          }
-        }
-      },
-      {
-        "ordinal": 7,
         "name": "origin_platform",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "slop",
+            "table": "ham",
             "name": "origin_platform"
           }
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 6,
         "name": "origin_src",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "slop",
+            "table": "ham",
             "name": "origin_src"
           }
         }
       },
       {
-        "ordinal": 9,
-        "name": "dead: _",
+        "ordinal": 7,
+        "name": "dead",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "slop",
+            "table": "ham",
             "name": "dead"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "date_last_seen",
+        "type_info": "Timestamp",
+        "origin": {
+          "Table": {
+            "table": "ham",
+            "name": "date_last_seen"
           }
         }
       }
@@ -122,13 +111,12 @@
       false,
       false,
       false,
-      false,
-      false,
       true,
-      false,
+      true,
+      true,
       false,
       false
     ]
   },
-  "hash": "afcf4a91b6e640388b42394a151468e98aad1f4b38cb7b4299186f0fee2d6f74"
+  "hash": "6e55749a65fcf4cad64bd5af4ea8a566f47343b40e5cfddcf7737b92371f85c7"
 }
