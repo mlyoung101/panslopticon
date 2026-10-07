@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src,\n        dead AS \"dead: _\"\n            FROM slop\n            ORDER BY date_last_seen ASC\n            LIMIT 9000;\n        ",
+  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src,\n        dead AS \"dead: _\"\n            FROM slop\n            WHERE NOT dead\n            ORDER BY date_last_seen ASC\n            LIMIT 9000;\n        ",
   "describe": {
     "columns": [
       {
@@ -130,5 +130,5 @@
       false
     ]
   },
-  "hash": "083d9dd8ab787813a5b3d701687fab1d5a647a45d2f6c7ace8ea86f26d8cd1bc"
+  "hash": "8a1990f9d9bc08db548887b110140def08964f6580493f32aaa7d67274867a9e"
 }

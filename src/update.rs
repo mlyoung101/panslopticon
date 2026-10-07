@@ -44,6 +44,7 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
         id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src,
         dead AS "dead: _"
             FROM slop
+            WHERE NOT dead
             ORDER BY date_last_seen ASC
             LIMIT 9000;
         "#
@@ -107,6 +108,7 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
             SELECT
         id, url, date_added, score, panslop_version, origin_platform, origin_src, dead, date_last_seen
             FROM ham
+            WHERE NOT dead
             ORDER BY date_last_seen ASC
             LIMIT 9000;
         "#
