@@ -12,28 +12,27 @@ if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         ratings = pd.read_sql_query("SELECT * FROM slopornot_ratings", conn)
         ratings = ratings.drop("id", axis=1)
-        # unique users
-        users = sorted(list(set(ratings["user_id"])))
-        print(ratings)
 
-        # for user_id in users:
-        #     target = ratings[ratings.user_id == user_id]
-        #     correct = target[target.rating == target.actual_classification]
-        #     agree = (len(correct) / len(target)) * 100.0
-        #     print(f"ID: {user_id} Agree: {agree:.2f}%")
-
-        ratings["is_correct"] = (
+        ratings["agree"] = (
             ratings["rating"] == ratings["actual_classification"]
         ) * 100.0
 
+        # Create a duplicate slice for the overall average across both categories
+        overall_ratings = ratings.copy()
+        overall_ratings["actual_classification"] = "avg_both"
+
+        # Combine them so Seaborn treats 'Average' as just another category hue
+        plot_df = pd.concat([ratings, overall_ratings], ignore_index=True)
+
         sns.set(style="darkgrid")
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(16, 6))
         sns.barplot(
-            data=ratings,
+            data=plot_df,
             x="user_id",
-            y="is_correct",
-            errorbar=("ci", 95),    # TODO: or std error??
+            y="agree",
+            errorbar=("ci", 95),
             capsize=0.05,
+            hue="actual_classification"
         )
 
         plt.xlabel("User ID")
