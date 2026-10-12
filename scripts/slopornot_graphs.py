@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import psycopg
+from sklearn.metrics import cohen_kappa_score
 
 
 if __name__ == "__main__":
@@ -13,30 +14,23 @@ if __name__ == "__main__":
         ratings = pd.read_sql_query("SELECT * FROM slopornot_ratings", conn)
         ratings = ratings.drop("id", axis=1)
 
-        ratings["agree"] = (
-            ratings["rating"] == ratings["actual_classification"]
-        ) * 100.0
+        kappas = {}
 
-        # Create a duplicate slice for the overall average across both categories
-        overall_ratings = ratings.copy()
-        overall_ratings["actual_classification"] = "avg_both"
+        for user in pd.unique(ratings["user_id"]):
+            user_ratings = ratings[ratings.user_id == user]["rating"]
+            classifier_ratings = ratings[ratings.user_id == user]["actual_classification"]
+            kappas[user] = cohen_kappa_score(user_ratings, classifier_ratings)
 
-        # Combine them so Seaborn treats 'Average' as just another category hue
-        plot_df = pd.concat([ratings, overall_ratings], ignore_index=True)
-
-        sns.set(style="darkgrid")
+        sns.set_theme(style="darkgrid", font="serif")
         plt.figure(figsize=(16, 6))
         sns.barplot(
-            data=plot_df,
-            x="user_id",
-            y="agree",
+            data=kappas,
             errorbar=("ci", 95),
             capsize=0.05,
-            hue="actual_classification"
         )
 
         plt.xlabel("User ID")
-        plt.ylabel("Agreement (%)")
+        plt.ylabel("Cohen's kappa")
         plt.title("Agreement with Classifier by User")
-        plt.ylim(0, 100)
+        plt.ylim(-1.0, 1.0)
         plt.show()
