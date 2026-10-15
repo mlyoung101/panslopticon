@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import psycopg
+from scipy import stats
 from sklearn.metrics import cohen_kappa_score
+import numpy as np
 
 
 if __name__ == "__main__":
@@ -17,9 +19,27 @@ if __name__ == "__main__":
         kappas = {}
 
         for user in pd.unique(ratings["user_id"]):
+            # exclude myself!
+            if user == 1:
+                continue
             user_ratings = ratings[ratings.user_id == user]["rating"]
             classifier_ratings = ratings[ratings.user_id == user]["actual_classification"]
             kappas[user] = cohen_kappa_score(user_ratings, classifier_ratings)
+
+        # Calculate the mean and standard error
+        k = list(kappas.values())
+        mean = np.mean(k)
+        se = stats.sem(k)
+
+        # Calculate 95% confidence interval
+        confidence = 0.95
+        n = len(k)
+        dof = n - 1  # degrees of freedom
+        confidence_interval = stats.t.interval(confidence, dof, mean, se)
+
+        print(f"Mean: {mean:.2f}")
+        print(f"SE: {se:.2f}")
+        print(f"95% Confidence Interval: {confidence_interval[0]:.2f} to {confidence_interval[1]:.2f}")
 
         sns.set_theme(style="darkgrid", font="serif")
         plt.figure(figsize=(16, 6))
