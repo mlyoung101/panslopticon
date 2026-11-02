@@ -13,8 +13,14 @@ if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         # returns an interval
         # https://stackoverflow.com/a/952600/5007892
-        slop = pd.read_sql_query("SELECT extract(epoch from (date_last_seen - date_added)) FROM slop WHERE dead", conn)
-        ham = pd.read_sql_query("SELECT extract(epoch from (date_last_seen - date_added)) FROM ham WHERE dead", conn)
+        slop = pd.read_sql_query(
+            "SELECT extract(epoch from (date_last_seen - date_added)) FROM slop WHERE dead",
+            conn,
+        )
+        ham = pd.read_sql_query(
+            "SELECT extract(epoch from (date_last_seen - date_added)) FROM ham WHERE dead",
+            conn,
+        )
 
         result = ttest_ind(a=slop["extract"], b=ham["extract"], equal_var=False).pvalue
         print(f"p < {result:.4f}")

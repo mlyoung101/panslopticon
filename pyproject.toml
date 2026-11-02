@@ -1,5 +1,5 @@
 [project]
-name = "eraticcompress"
+name = "panslop"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -17,6 +17,7 @@ dependencies = [
     "jupyterlab-vim>=4.1.4",
     "jupyterlab-wakatime>=0.2.0",
     "jupytext>=1.19.4",
+    "lifelines>=0.30.0",
     "lmppl>=0.3.2",
     "markdown>=3.10.2",
     "markdown-it-py>=4.2.0",
@@ -28,12 +29,14 @@ dependencies = [
     "plain-text-markdown-extention",
     "psycopg>=3.3.5",
     "pyarrow>=25.0.0",
+    "pygithub>=2.10.0",
     "requests>=2.34.2",
     "rich>=15.0.0",
     "scikit-learn>=1.9.0",
     "scipy>=1.18.0",
     "seaborn>=0.13.2",
     "sentence-transformers>=5.6.1",
+    "statsmodels>=0.15.0",
     "tiktoken>=0.13.0",
     "tqdm>=4.70.0",
     "webio-jupyter-extension>=0.1.0",
