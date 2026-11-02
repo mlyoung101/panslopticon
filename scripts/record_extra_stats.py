@@ -47,7 +47,7 @@ if __name__ == "__main__":
                 # assume dead
                 conn.execute(
                     "UPDATE slop SET dead = TRUE WHERE id = %s",
-                    id,
+                    (id,),
                 )
 
             conn.commit()
