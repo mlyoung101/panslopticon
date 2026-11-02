@@ -5,7 +5,7 @@
 import psycopg
 import time
 from tqdm import tqdm
-from github import Auth, Github
+from github import Auth, Github, GithubException
 import re
 import os
 
@@ -23,15 +23,17 @@ if __name__ == "__main__":
         for row in tqdm(cursor.fetchall()):
             id = row[0]
             url = row[1]
-            # print(f"Update {id} at {url}")
 
             matches = re.match(REPO_REGEX, url)
-            creation_date = github.get_repo(f"{matches.group(1)}/{matches.group(2)}").created_at
-            # print(f"Creation date: {creation_date}")
+            try:
+                creation_date = github.get_repo(f"{matches.group(1)}/{matches.group(2)}").created_at
+            except GithubException as e:
+                print(f"Failed to fetch repo {url}: {e}")
+                continue
 
             rows_changed = conn.execute("UPDATE slop SET date_created = %s WHERE id = %s", (creation_date, id)).rowcount
             if rows_changed == 0:
                 raise Exception("update query probably failed!")
             conn.commit()
 
-            time.sleep(0.65)
+            time.sleep(0.3)
