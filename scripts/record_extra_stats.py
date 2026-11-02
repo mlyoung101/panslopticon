@@ -14,7 +14,9 @@ REPO_REGEX = re.compile(r"https:\/\/github\.com\/(.*)\/(.*)")
 
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
-        cursor = conn.cursor().execute("SELECT * FROM slop WHERE NOT dead AND date_created IS NULL")
+        cursor = conn.cursor().execute("""
+            SELECT * FROM slop WHERE NOT dead AND (date_created IS NULL OR stars IS NULL)
+        """)
 
         token = Auth.Token(os.environ["GH_PAT"])
         github = Github(auth=token)
@@ -26,14 +28,27 @@ if __name__ == "__main__":
 
             matches = re.match(REPO_REGEX, url)
             try:
-                creation_date = github.get_repo(f"{matches.group(1)}/{matches.group(2)}").created_at
+                repo = github.get_repo(f"{matches.group(1)}/{matches.group(2)}")
+                creation_date = repo.created_at
+                stars = repo.stargazers_count
+
+                conn.execute(
+                    "UPDATE slop SET date_created = %s WHERE id = %s",
+                    (creation_date, id),
+                    prepare=True,
+                )
+                conn.execute(
+                    "UPDATE slop SET stars = %s WHERE id = %s",
+                    (stars, id),
+                    prepare=True,
+                )
             except GithubException as e:
                 print(f"Failed to fetch repo {url}: {e}")
-                continue
+                # assume dead
+                conn.execute(
+                    "UPDATE slop SET dead = TRUE WHERE id = %s",
+                    id,
+                )
 
-            rows_changed = conn.execute("UPDATE slop SET date_created = %s WHERE id = %s", (creation_date, id)).rowcount
-            if rows_changed == 0:
-                raise Exception("update query probably failed!")
             conn.commit()
-
             time.sleep(0.3)
