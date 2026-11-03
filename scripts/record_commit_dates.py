@@ -16,7 +16,7 @@ if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         for db in ("ham", "slop"):
             cursor = conn.cursor().execute(f"""
-                SELECT * FROM {db} WHERE NOT dead AND date_last_seen IS NULL ORDER BY RANDOM() LIMIT 10000
+                SELECT * FROM {db} WHERE NOT dead AND date_last_commit IS NULL ORDER BY RANDOM() LIMIT 10000
             """)
 
             token = Auth.Token(os.environ["GH_PAT"])
