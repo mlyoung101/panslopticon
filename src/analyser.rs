@@ -92,16 +92,19 @@ fn process_readme(config: &PanslopConfig, repo: &GhLocalRepo) -> color_eyre::Res
         // calculate score increment
         let mut score = 0.0;
         if length > config.detect.excessive_readme_length.try_into()? {
+            debug!("Apply penalty: excessively long readme");
             score += config.scoring.excessively_long_readme;
         }
 
         score += (emojis as f64) * config.scoring.emoji;
         score += (emdashes as f64) * config.scoring.emdash;
         score += (signals as f64) * config.scoring.readme_signal;
+        debug!("Score before normalisation: {score}");
 
         // normalise to readme length
         score /= readme.len() as f64;
         score *= config.scoring.readme_multiplier;
+        debug!("Score after normalisation: {score}");
 
         Ok(score)
     } else {

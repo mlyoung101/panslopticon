@@ -44,7 +44,6 @@ readme_signals = [
     "(?i)governed by it",
     "(?i)the (.*) owns the (.*),",
     "(?i)(that's|that is) genuinely (interesting|insightful|impressive|enlightening)",
-    "(?i)## architecture"
 ]
 
 # Regexes to detect AI coding tools in Git commits
@@ -128,7 +127,7 @@ gh_broad_search_pages_max = 10
 [scoring]
 # Each AI commit gains this many points. That total score is then divided by the total number of commits in
 # the repo (to normalise it)
-ai_commit = 65.0
+ai_commit = 60.0
 # this isn't really an incredibly good metric so we don't weight it very highly normalised per comment
 excessively_long_commit = 5.0
 
@@ -137,7 +136,7 @@ emoji = 10.0
 emdash = 15.0
 # factor multiply the README score by, this is indicative of the length of an "average" README
 # median ham readme is like 4000 chars, we'll be generous and say 3000 multiplier here
-readme_multiplier = 2500.0
+readme_multiplier = 2400.0
 
 # A single AI file that is not hidden
 ai_file = 35.0
