@@ -33,7 +33,6 @@ pub struct SlopItem {
     pub score: f64,
     pub panslop_version: String,
     pub date_last_seen: NaiveDateTime,
-    pub dataset_path: Option<String>,
     pub origin_platform: String,
     pub origin_src: String,
     pub dead: bool,

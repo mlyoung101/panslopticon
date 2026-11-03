@@ -347,9 +347,9 @@ pub async fn analyse_one(
         let id = sqlx::query!(
             r#"
                 INSERT INTO slop
-                    (url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform,
+                    (url, date_added, score, panslop_version, date_last_seen, origin_platform,
                      origin_src, dead)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, false)
                 RETURNING id;
             "#,
             item.url,
@@ -357,7 +357,6 @@ pub async fn analyse_one(
             score as f32,
             VERSION,
             now,
-            "",
             item.origin_platform,
             item.origin_src
         )

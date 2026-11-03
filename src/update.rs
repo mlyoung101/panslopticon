@@ -41,12 +41,12 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
         SlopItem,
         r#"
             SELECT
-        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src,
+        id, url, date_added, score, panslop_version, date_last_seen, origin_platform, origin_src,
         dead AS "dead: _"
             FROM slop
             WHERE NOT dead
             ORDER BY date_last_seen ASC
-            LIMIT 9000;
+            LIMIT 10000;
         "#
     )
     .fetch_all(&db)
@@ -110,7 +110,7 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
             FROM ham
             WHERE NOT dead
             ORDER BY date_last_seen ASC
-            LIMIT 9000;
+            LIMIT 10000;
         "#
         )
         .fetch_all(&db)
@@ -223,9 +223,9 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
             let id = sqlx::query!(
                 r#"
                     INSERT INTO slop
-                        (url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform,
+                        (url, date_added, score, panslop_version, date_last_seen, origin_platform,
                          origin_src, dead)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, false)
                     RETURNING id;
                 "#,
                 item.url,
@@ -233,7 +233,6 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
                 score as f32,
                 VERSION,
                 now,
-                "",
                 "github",
                 "reconsider_not_slop"
             )

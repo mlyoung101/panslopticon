@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, date_last_seen, dataset_path, origin_platform, origin_src,\n        dead AS \"dead: _\"\n            FROM slop\n            WHERE NOT dead\n            ORDER BY date_last_seen ASC\n            LIMIT 9000;\n        ",
+  "query": "\n            SELECT\n        id, url, date_added, score, panslop_version, date_last_seen, origin_platform, origin_src,\n        dead AS \"dead: _\"\n            FROM slop\n            WHERE NOT dead\n            ORDER BY date_last_seen ASC\n            LIMIT 10000;\n        ",
   "describe": {
     "columns": [
       {
@@ -71,17 +71,6 @@
       },
       {
         "ordinal": 6,
-        "name": "dataset_path",
-        "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "slop",
-            "name": "dataset_path"
-          }
-        }
-      },
-      {
-        "ordinal": 7,
         "name": "origin_platform",
         "type_info": "Text",
         "origin": {
@@ -92,7 +81,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 7,
         "name": "origin_src",
         "type_info": "Text",
         "origin": {
@@ -103,7 +92,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 8,
         "name": "dead: _",
         "type_info": "Bool",
         "origin": {
@@ -124,11 +113,10 @@
       false,
       false,
       false,
-      true,
       false,
       false,
       false
     ]
   },
-  "hash": "8a1990f9d9bc08db548887b110140def08964f6580493f32aaa7d67274867a9e"
+  "hash": "05d0271261fd8846a487ef2be50baa802778517d25f246380b8c488447cd7279"
 }

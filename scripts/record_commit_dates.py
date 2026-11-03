@@ -16,7 +16,7 @@ REPO_REGEX = re.compile(r"https:\/\/github\.com\/(.*)\/(.*)")
 
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
-        for db in ("slop", "ham"):
+        for db in ("ham", "slop"):
             cursor = conn.cursor().execute(f"""
                 SELECT * FROM {db} WHERE NOT dead ORDER BY RANDOM() LIMIT 10000
             """)
@@ -38,18 +38,18 @@ if __name__ == "__main__":
                     )
                     now = datetime.now(UTC)
                     conn.execute(
-                        "UPDATE slop SET date_last_commit = %s WHERE id = %s;",
+                        f"UPDATE {db} SET date_last_commit = %s WHERE id = %s;",
                         (most_recent_commit_date, id),
                     )
                     conn.execute(
-                        "UPDATE slop SET date_last_seen = %s WHERE id = %s;", (now, id)
+                        f"UPDATE {db} SET date_last_seen = %s WHERE id = %s;", (now, id)
                     )
 
                 except GithubException as e:
                     print(f"Failed to fetch repo {url}: {e}")
                     # assume dead
                     conn.execute(
-                        "UPDATE slop SET dead = TRUE WHERE id = %s",
+                        f"UPDATE {db} SET dead = TRUE WHERE id = %s",
                         (id,),
                     )
 
