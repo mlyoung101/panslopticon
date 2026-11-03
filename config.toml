@@ -89,7 +89,10 @@ gh_tags = [
     "racket", "scheme", "ocaml", "clojure", "framework", "e-commerce", "blockchain", "canvas", "game-engine",
     "nlp", "quant", "browser", "hacktoberfest", "claude", "database", "vector", "code-quality",
     "code-analysis", "npm", "single-file", "nextjs", "offline", "zero-dependency", "css", "html",
-    "cybersecurity", "exploit", "json", "yaml", "hack-tool", "hacker"
+    "cybersecurity", "exploit", "json", "yaml", "hack-tool", "hacker", "speech-recognition", "speech-to-text",
+    "lisp", "scripting", "activitypub", "fediverse", "honeypot", "plc", "llvm", "neuron", "neuroscience",
+    "simulation", "statistics", "calculus", "linear-algebra", "gravity", "theory-of-everything", "codex",
+    "opus"
 ]
 
 # Minimum stars even for slop; used as kind of a spam filter
@@ -106,7 +109,7 @@ gh_http_head_wait_ms = 1000
 # GitHub tags to NOT search for, when searching for ham
 # These would all be slop most likely anyway
 gh_ham_tags_blocklist = [
-    "ai", "mcp", "crypto", "saas", "llm", "big-data", "agents", "rag", "blockchain", "claude"
+    "ai", "mcp", "crypto", "saas", "llm", "big-data", "agents", "rag", "blockchain", "claude", "codex"
 ]
 
 # Number of rounds of a GitHub broad search (just "stars:>=gh_min_stairs") to do
