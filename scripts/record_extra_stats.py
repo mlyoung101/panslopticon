@@ -15,7 +15,7 @@ REPO_REGEX = re.compile(r"https:\/\/github\.com\/(.*)\/(.*)")
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         cursor = conn.cursor().execute("""
-            SELECT * FROM slop WHERE NOT dead AND (date_created IS NULL OR stars IS NULL)
+            SELECT * FROM ham WHERE NOT dead AND (date_created IS NULL OR stars IS NULL)
         """)
 
         token = Auth.Token(os.environ["GH_PAT"])
@@ -33,12 +33,12 @@ if __name__ == "__main__":
                 stars = repo.stargazers_count
 
                 conn.execute(
-                    "UPDATE slop SET date_created = %s WHERE id = %s",
+                    "UPDATE ham SET date_created = %s WHERE id = %s",
                     (creation_date, id),
                     prepare=True,
                 )
                 conn.execute(
-                    "UPDATE slop SET stars = %s WHERE id = %s",
+                    "UPDATE ham SET stars = %s WHERE id = %s",
                     (stars, id),
                     prepare=True,
                 )
@@ -46,7 +46,7 @@ if __name__ == "__main__":
                 print(f"Failed to fetch repo {url}: {e}")
                 # assume dead
                 conn.execute(
-                    "UPDATE slop SET dead = TRUE WHERE id = %s",
+                    "UPDATE ham SET dead = TRUE WHERE id = %s",
                     (id,),
                 )
 

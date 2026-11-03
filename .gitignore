@@ -5,4 +5,5 @@ data/*.dat
 .jupyter*
 .virtual_documents
 .ipynb*
+*.zst
 __pycache__
