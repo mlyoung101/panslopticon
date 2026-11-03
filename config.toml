@@ -3,13 +3,14 @@
 # Detection signals
 [detect]
 # Emojis that AI typically likes to use; regex
-emojis = "👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦|⚡|🔍|🤖|💥"
+emojis = "👋|❤️|📫|🔥|🚀|📁|📂|✨|✅|📦|⚡|🔍|🤖|💥|🤝|🐛|🎨|📝|⭐|🎯|💸|🔒|🐌|🔌"
 
 # Maximum README length in characters considered to be excessive
-excessive_readme_length = 5000
+# median readme length in ham is approximately 4,200; so let's say an excessive length is like 6,000
+excessive_readme_length = 6000
 
 # Maximum commit body length in characters
-excessive_commit_length = 250
+excessive_commit_length = 300
 
 # Signals to potentially consider a README to be AI slop
 readme_signals = [
@@ -38,7 +39,12 @@ readme_signals = [
     "(?i)the whole (ball)?-?game",
     "(?i)key takeaways",
     "(?i)delve",
-    "(?i)a testament to"
+    "(?i)a testament to",
+    # back to my own stuff
+    "(?i)governed by it",
+    "(?i)the (.*) owns the (.*),",
+    "(?i)(that's|that is) genuinely (interesting|insightful|impressive|enlightening)",
+    "(?i)## architecture"
 ]
 
 # Regexes to detect AI coding tools in Git commits
@@ -126,19 +132,23 @@ ai_commit = 65.0
 # this isn't really an incredibly good metric so we don't weight it very highly normalised per comment
 excessively_long_commit = 5.0
 
-readme_signal = 50.0
-emoji = 15.0
-emdash = 10.0
+readme_signal = 60.0
+emoji = 10.0
+emdash = 15.0
 # factor multiply the README score by, this is indicative of the length of an "average" README
-readme_multiplier = 2000.0
+# median ham readme is like 4000 chars, we'll be generous and say 3000 multiplier here
+readme_multiplier = 2500.0
 
 # A single AI file that is not hidden
-ai_file = 50.0
+ai_file = 35.0
 
 # An AI file that **is** hidden, means the author intentionally is trying to hide it from us...
-ai_file_hidden = 250.0
+# we used to penalise this more harshly, but it could be ham in the sense that the author realises that an
+# AGENTS.md or whatever should be deleted.
+ai_file_hidden = 60.0
 
 # This is high because it needs to weigh against the other scores, which are applied per commit
+# However it's not an amazing score so don't weight it too highly
 excessively_long_readme = 15.0
 
 # !! The all important threshold to decide if a project is slop or not !!
