@@ -38,8 +38,8 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
         // due to bullshit
         // https://github.com/transact-rs/sqlx/issues/2648#issuecomment-1970636631
         let slop = sqlx::query_as!(
-        SlopItem,
-        r#"
+            SlopItem,
+            r#"
             SELECT
         id, url, date_added, score, panslop_version, date_last_seen, origin_platform, origin_src,
         dead AS "dead: _"
@@ -48,9 +48,9 @@ pub async fn update_all(config_path: PathBuf, db_url: String) -> color_eyre::Res
             ORDER BY date_last_seen ASC
             LIMIT 10000;
         "#
-    )
-    .fetch_all(&db)
-    .await?;
+        )
+        .fetch_all(&db)
+        .await?;
 
         for item in slop {
             info!("Update repo: {}", item.url);
@@ -173,10 +173,6 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
     let config_str = std::fs::read_to_string(config_path)?;
     let config: PanslopConfig = toml::from_str(&config_str)?;
 
-    // find items that are most likely to be considered slop; score is >= 75% of the threshold
-    let thresh = 0.70 * config.scoring.threshold;
-    info!("Considering items with score >= {}", thresh);
-
     let db = PgPool::connect(&db_url.clone()).await?;
 
     let not_slop = sqlx::query_as!(
@@ -184,10 +180,9 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
         r#"
             SELECT id, url, date_added, score
             FROM not_slop
-            WHERE score >= $1 AND NOT did_reconsider
+            WHERE NOT did_reconsider
             ORDER BY RANDOM();
         "#,
-        thresh as f32
     )
     .fetch_all(&db)
     .await?;
@@ -198,7 +193,11 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
         let repo = GhRemoteRepo::new(item.url.clone());
 
         if !repo.exists().await? {
-            warn!("Repo no longer exists, skipping");
+            warn!("Repo no longer exists, removing");
+            // remove from not_slop
+            sqlx::query!("DELETE FROM not_slop WHERE id = $1;", item.id)
+                .execute(&db)
+                .await?;
             continue;
         }
 
@@ -213,7 +212,7 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
 
         // was it slop?! the big decision!!
         if score >= config.scoring.threshold {
-            info!("Slop detected!! Repo: {}", item.url);
+            warn!("Slop detected!! Repo: {}", item.url);
 
             // remove from not_slop
             sqlx::query!("DELETE FROM not_slop WHERE id = $1;", item.id)
@@ -237,7 +236,8 @@ pub async fn reconsider(config_path: PathBuf, db_url: String) -> color_eyre::Res
                 "reconsider_not_slop"
             )
             .fetch_one(&db)
-            .await?.id;
+            .await?
+            .id;
 
             for agent in detected_agents {
                 sqlx::query!(

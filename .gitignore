@@ -5,3 +5,4 @@ data/*.dat
 .jupyter*
 .virtual_documents
 .ipynb*
+__pycache__

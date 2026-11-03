@@ -122,6 +122,12 @@ fn process_commit(
     let mut score = 0.0;
     let mut detected_agents = HashSet::new();
 
+    // skip depandabot commits
+    if commit.contains("dependabot[bot]") {
+        debug!("Skip dependabot commit");
+        return Ok((0.0, HashSet::new()));
+    }
+
     // look for each agent (try to cache regexes for a bit of a speed boost)
     for (agent, regexes) in &config.detect.commit {
         let regex = compile_mega_regex(regexes)?;
