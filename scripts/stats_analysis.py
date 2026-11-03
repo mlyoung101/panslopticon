@@ -6,21 +6,16 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import psycopg
-from scipy.stats import ttest_ind
-
+import statsmodels.api as sm
+from patsy import dmatrices
 
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
-        # returns an interval
-        # https://stackoverflow.com/a/952600/5007892
         slop = pd.read_sql_query(
-            "SELECT extract(epoch from (date_last_seen - date_added)) FROM slop WHERE dead",
+            "SELECT * FROM slop",
             conn,
         )
         ham = pd.read_sql_query(
-            "SELECT extract(epoch from (date_last_seen - date_added)) FROM ham WHERE dead",
+            "SELECT * FROM ham",
             conn,
         )
-
-        result = ttest_ind(a=slop["extract"], b=ham["extract"], equal_var=False).pvalue
-        print(f"p < {result:.4f}")
