@@ -153,4 +153,4 @@ ham_threshold = 40
 dataset_path = "/mnt/ext/panslopticon"
 
 # Keep downloaded repos?
-download_repos = true
+download_repos = false
