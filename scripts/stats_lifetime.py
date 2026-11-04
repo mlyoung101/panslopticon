@@ -15,14 +15,14 @@ if __name__ == "__main__":
         slop = pd.read_sql_query(
             """
             SELECT *, EXTRACT(epoch FROM date_last_seen - date_added)/86400 AS lifetime_days
-            FROM slop WHERE stars IS NOT NULL
+            FROM slop WHERE stars IS NOT NULL AND dead
             """,
             conn,
         )
         ham = pd.read_sql_query(
             """
             SELECT *, EXTRACT(epoch FROM date_last_seen - date_added)/86400 AS lifetime_days
-            FROM ham WHERE stars IS NOT NULL
+            FROM ham WHERE stars IS NOT NULL AND dead
             """,
             conn,
         )
@@ -39,6 +39,6 @@ if __name__ == "__main__":
         df = pd.concat([slop, ham])
         print(df)
 
-        # compute OLS
-        model = smf.logit("dead ~ stars + lifetime_days + score", data=df).fit()
+        # compute OLS of lifetime
+        model = smf.ols("lifetime_days ~ stars + score", data=df).fit()
         print(model.summary())
