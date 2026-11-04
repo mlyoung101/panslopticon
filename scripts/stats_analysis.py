@@ -6,26 +6,39 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import psycopg
-import statsmodels.api as sm
+import statsmodels.formula.api as smf
 from patsy import dmatrices
-from scipy.stats import f_oneway
 
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         print("Collecting data...")
         slop = pd.read_sql_query(
-            "SELECT * FROM slop",
+            """
+            SELECT *, EXTRACT(epoch FROM date_last_seen - date_added)/86400 AS lifetime_days
+            FROM slop WHERE stars IS NOT NULL
+            """,
             conn,
         )
-        # ham = pd.read_sql_query(
-        #     "SELECT * FROM ham",
-        #     conn,
-        # )
+        ham = pd.read_sql_query(
+            """
+            SELECT *, EXTRACT(epoch FROM date_last_seen - date_added)/86400 AS lifetime_days
+            FROM ham WHERE stars IS NOT NULL
+            """,
+            conn,
+        )
 
-        groups = [group["score"].values for name, group in slop.groupby("origin_src")]
+        # combine
+        slop["is_slop"] = 1
+        ham["is_slop"] = 0
 
-        print(slop)
-        print(groups)
+        # necessary for OLS, apparently
+        # https://stackoverflow.com/a/27362540/5007892
+        slop["dead"] = slop["dead"].astype(int)
+        ham["dead"] = ham["dead"].astype(int)
 
-        stat, pvalue = f_oneway(*groups)
-        print(f"ANOVA F: {stat:.2f}, p = {pvalue:.4e}")
+        df = pd.concat([slop, ham])
+        print(df)
+
+        # compute OLS
+        model = smf.logit("dead ~ stars + lifetime_days + score", data=df).fit()
+        print(model.summary())
