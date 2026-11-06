@@ -139,12 +139,12 @@ emdash = 15.0
 readme_multiplier = 2400.0
 
 # A single AI file that is not hidden
-ai_file = 35.0
+ai_file = 30.0
 
 # An AI file that **is** hidden, means the author intentionally is trying to hide it from us...
 # we used to penalise this more harshly, but it could be ham in the sense that the author realises that an
 # AGENTS.md or whatever should be deleted.
-ai_file_hidden = 60.0
+ai_file_hidden = 40.0
 
 # This is high because it needs to weigh against the other scores, which are applied per commit
 # However it's not an amazing score so don't weight it too highly
