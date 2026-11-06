@@ -44,6 +44,7 @@ readme_signals = [
     "(?i)governed by it",
     "(?i)the (.*) owns the (.*),",
     "(?i)(that's|that is) genuinely (interesting|insightful|impressive|enlightening)",
+    "(?i)the (.*) is not special",
 ]
 
 # Regexes to detect AI coding tools in Git commits
@@ -58,7 +59,7 @@ gemini = ["(?i)gemini (pro|flash)", "(?i)antigravity"]
 
 # NOTE: often the commits contain higher levels of slop
 generic = [
-    "(--)|→|×|–|—|⸺|⸻", # emdash/unicode
+    "( -- )|→|×|–|—|⸺|⸻", # emdash/unicode
     "(?i)([0-9]+)?.*(tests )?(pass|passing)", # often likes to brag about how many tests are passing
     "(?i)rebrand logo?",
     "(?i)belt-and-suspenders", # what the fuck does this even mean lmao; Claude-ism apparently
