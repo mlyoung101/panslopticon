@@ -20,6 +20,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import tree
 from sklearn.decomposition import PCA
+from sklearn.ensemble import AdaBoostClassifier
 import psycopg
 
 # based on: https://github.com/nadinejackson1/text-classification-naive-bayes/blob/main/main.ipynb
@@ -168,7 +169,8 @@ def train():
         "Decision Tree": DecisionTreeClassifier(max_depth=5),
         "KNN": KNeighborsClassifier(5),
         # "Linear SVM": SVC(kernel="linear", C=0.025),
-        "Random Forest": RandomForestClassifier(max_depth=5, n_estimators=15),
+        "Random Forest": RandomForestClassifier(max_depth=5, n_estimators=50),
+        "Ada Boost": AdaBoostClassifier(),
         # "Logistic Regression": LogisticRegressionCV(
         #     Cs=np.logspace(-6, 6, 101),
         #     cv=10,
