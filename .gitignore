@@ -7,3 +7,4 @@ data/*.dat
 .ipynb*
 *.zst
 __pycache__
+report.html

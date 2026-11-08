@@ -107,8 +107,16 @@ impl GhRemoteRepo {
             .build();
 
         // let client = reqwest::Client::builder().user_agent(user_agent).build()?;
-        let status = client.head(&self.url).send().await?;
-        Ok(status.status().is_success())
+        let status = client.get(&self.url).send().await?;
+        if status.status().is_success() {
+            let body = status.text().await?;
+            if body.to_lowercase().contains("repository has been disabled") {
+                return Ok(false);
+            }
+            return Ok(true);
+        } else {
+            return Ok(false);
+        }
     }
 
     // TODO get stars count
