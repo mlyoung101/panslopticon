@@ -43,7 +43,7 @@ def calculate_burstiness(text):
 
 
 # from: https://huggingface.co/docs/transformers/perplexity
-device = Accelerator().device
+device = Accelerator(cpu=False).device
 model_id = "openai-community/gpt2-large"
 model = GPT2LMHeadModel.from_pretrained(model_id).to(device)
 tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
@@ -94,6 +94,8 @@ def compute_perplexity(text):
 
 
 if __name__ == "__main__":
+    print(f"Torch device: {device}")
+
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         print("Collecting data...")
         slop = pd.read_sql_query(

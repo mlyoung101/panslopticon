@@ -46,10 +46,12 @@ dependencies = [
     "swifter>=1.4.0",
     "thinkst-zippy>=0.1.3",
     "tiktoken>=0.13.0",
+    "torch",
     "tqdm>=4.70.0",
     "transformers>=5.14.1",
     "waybackpy>=3.0.6",
     "webio-jupyter-extension>=0.1.0",
+    "triton-rocm>=3.0.0rc1",
 ]
 
 [tool.basedpyright]
