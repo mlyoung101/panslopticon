@@ -3,25 +3,24 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import pickle
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import psycopg
 import rich
 from IPython import embed
+from sklearn import tree
+from sklearn.decomposition import PCA
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.linear_model import LogisticRegressionCV, LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegressionCV
 from sklearn.metrics import accuracy_score, classification_report, log_loss
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from sklearn import tree
-from sklearn.decomposition import PCA
-from sklearn.ensemble import AdaBoostClassifier
-import psycopg
 
 # based on: https://github.com/nadinejackson1/text-classification-naive-bayes/blob/main/main.ipynb
 
@@ -31,10 +30,12 @@ LIMIT = 50_000
 def load_data() -> pd.DataFrame:
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         spam = pd.read_sql_query(
-            f"SELECT text FROM full_text WHERE LOWER(file) != 'contributing.md' ORDER BY RANDOM() LIMIT {LIMIT}", conn
+            f"SELECT text FROM full_text WHERE LOWER(file) != 'contributing.md' ORDER BY RANDOM() LIMIT {LIMIT}",
+            conn,
         )
         ham = pd.read_sql_query(
-            f"SELECT text FROM ham_full_text WHERE LOWER(file) != 'contributing.md' ORDER BY RANDOM() LIMIT {LIMIT}", conn
+            f"SELECT text FROM ham_full_text WHERE LOWER(file) != 'contributing.md' ORDER BY RANDOM() LIMIT {LIMIT}",
+            conn,
         )
         conn.close()
 
@@ -67,22 +68,25 @@ def important_features(vectorizer, classifier, n=20):
     for coef, feat in topn_class2:
         print(f"{class_labels[1]} {coef:.4f} {feat}")
 
+
 # https://gist.github.com/Lorenzoantonelli/40454798ae53386a1d5b9c8bb60664d5
 def report_to_latex(report):
-    if report[0] == '\n':
+    if report[0] == "\n":
         report = report[1:]
-    if report[-1] == '\n':
+    if report[-1] == "\n":
         report = report[:-1]
 
-    lines = report.split('\n')
+    lines = report.split("\n")
 
-    header = ["\\begin{table}",
-              "\\caption{Latex Table from Classification Report}",
-              "\\label{table:classification:report}",
-              "\\centering",
-              "\\begin{tabular}{c c c c r}",
-              "& Precision & Recall & F-score & Support",
-              "\\\\"]
+    header = [
+        "\\begin{table}",
+        "\\caption{Latex Table from Classification Report}",
+        "\\label{table:classification:report}",
+        "\\centering",
+        "\\begin{tabular}{c c c c r}",
+        "& Precision & Recall & F-score & Support",
+        "\\\\",
+    ]
 
     body = []
     for line in lines[2:-4]:
@@ -102,7 +106,7 @@ def report_to_latex(report):
 
     footer.extend(["\\end{tabular}", "\\end{table}"])
 
-    latex_table = '\n'.join(header + body + footer)
+    latex_table = "\n".join(header + body + footer)
 
     return latex_table
 

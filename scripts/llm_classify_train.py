@@ -3,24 +3,24 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import pickle
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import psycopg
 import rich
 from IPython import embed
+from sklearn import tree
+from sklearn.decomposition import PCA
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.linear_model import LogisticRegressionCV, LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegressionCV
 from sklearn.metrics import accuracy_score, classification_report, log_loss
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from sklearn import tree
-from sklearn.decomposition import PCA
-import psycopg
 
 # based on: https://github.com/nadinejackson1/text-classification-naive-bayes/blob/main/main.ipynb
 
@@ -159,6 +159,7 @@ def train():
         rich.print(f"[bold red]Classification report for {name}:[/bold red]\n{report}")
         print(report_to_latex(report))
         print()
+
 
 if __name__ == "__main__":
     train()

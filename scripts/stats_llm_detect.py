@@ -2,17 +2,18 @@
 #
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+import string
+
+import nltk
 import pandas as pd
 import psycopg
-from nltk.corpus import stopwords
-import nltk
-import string
-from scipy.stats import ttest_ind
-from rich import print
 import swifter
-from transformers import GPT2LMHeadModel, GPT2TokenizerFast
-from accelerate import Accelerator
 import torch
+from accelerate import Accelerator
+from nltk.corpus import stopwords
+from rich import print
+from scipy.stats import ttest_ind
+from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 
 
 # these two from
@@ -40,11 +41,13 @@ def calculate_burstiness(text):
     burstiness_score = variance / (avg_freq**2)
     return burstiness_score
 
+
 # from: https://huggingface.co/docs/transformers/perplexity
 device = Accelerator().device
 model_id = "openai-community/gpt2-large"
 model = GPT2LMHeadModel.from_pretrained(model_id).to(device)
 tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
+
 
 def compute_perplexity(text):
     encodings = tokenizer(text, return_tensors="pt")
@@ -71,9 +74,13 @@ def compute_perplexity(text):
             neg_log_likelihood = outputs.loss
 
         # Accumulate the total negative log-likelihood and the total number of tokens
-        num_valid_tokens = (target_ids != -100).sum().item()  # number of valid tokens in target_ids
+        num_valid_tokens = (
+            (target_ids != -100).sum().item()
+        )  # number of valid tokens in target_ids
         batch_size = target_ids.size(0)
-        num_loss_tokens = num_valid_tokens - batch_size  # subtract batch_size due to internal label shift
+        num_loss_tokens = (
+            num_valid_tokens - batch_size
+        )  # subtract batch_size due to internal label shift
         nll_sum += neg_log_likelihood * num_loss_tokens
         n_tokens += num_loss_tokens
 
@@ -84,6 +91,7 @@ def compute_perplexity(text):
     avg_nll = nll_sum / n_tokens  # average negative log-likelihood per token
     ppl = torch.exp(avg_nll)
     return float(ppl)
+
 
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:

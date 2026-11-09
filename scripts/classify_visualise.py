@@ -47,7 +47,9 @@ def visualise(url: str, output_path: str = "report.html"):
     log_prob = classifier.feature_log_prob_ + classifier.class_log_prior_[:, None]
     prob = np.exp(log_prob - np.max(log_prob, axis=0, keepdims=True))
     prob = prob / np.sum(prob, axis=0, keepdims=True)
-    word_slop = {word: prob[spam_idx, idx] for word, idx in vectorizer.vocabulary_.items()}
+    word_slop = {
+        word: prob[spam_idx, idx] for word, idx in vectorizer.vocabulary_.items()
+    }
 
     cmap = matplotlib.colormaps["jet"]
 

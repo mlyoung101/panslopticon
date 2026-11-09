@@ -4,12 +4,12 @@
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import numpy as np
 import pandas as pd
+import psycopg
 import rich
 from IPython import embed
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-import psycopg
 from markdown_it import MarkdownIt
 from mdit_plain.renderer import RendererPlain
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
 parser = MarkdownIt(renderer_cls=RendererPlain)
 
@@ -39,8 +39,11 @@ def load_data() -> pd.DataFrame:
 
     return pd.concat([spam, ham], ignore_index=True)
 
+
 def ngrams(dataset):
-    vec = CountVectorizer(ngram_range=(2, 3), stop_words="english", strip_accents="ascii")
+    vec = CountVectorizer(
+        ngram_range=(2, 3), stop_words="english", strip_accents="ascii"
+    )
 
     # input to fit_transform() should be an iterable with strings
     ngrams = vec.fit_transform(dataset)
@@ -51,8 +54,11 @@ def ngrams(dataset):
     count_values = ngrams.toarray().sum(axis=0)
 
     # output n-grams
-    for ng_count, ng_text in sorted([(count_values[i],k) for k,i in vocab.items()], reverse=True)[:100]:
+    for ng_count, ng_text in sorted(
+        [(count_values[i], k) for k, i in vocab.items()], reverse=True
+    )[:100]:
         print(ng_count, ng_text)
+
 
 def train():
     print("Loading data...")

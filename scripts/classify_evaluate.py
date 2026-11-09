@@ -3,13 +3,13 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import pickle
+import sys
 
-from IPython import embed
+import requests
 import rich
+from IPython import embed
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
-import sys
-import requests
 
 
 def load(url: str):

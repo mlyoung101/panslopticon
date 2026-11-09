@@ -3,13 +3,12 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-import seaborn as sns
 import psycopg
+import seaborn as sns
 from scipy import stats
 from sklearn.metrics import cohen_kappa_score
-import numpy as np
-
 
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
@@ -23,7 +22,9 @@ if __name__ == "__main__":
             if user == 1:
                 continue
             user_ratings = ratings[ratings.user_id == user]["rating"]
-            classifier_ratings = ratings[ratings.user_id == user]["actual_classification"]
+            classifier_ratings = ratings[ratings.user_id == user][
+                "actual_classification"
+            ]
             kappas[user] = cohen_kappa_score(user_ratings, classifier_ratings)
 
         # Calculate the mean and standard error
@@ -39,7 +40,9 @@ if __name__ == "__main__":
 
         print(f"Mean: {mean:.2f}")
         print(f"SE: {se:.2f}")
-        print(f"95% Confidence Interval: {confidence_interval[0]:.2f} to {confidence_interval[1]:.2f}")
+        print(
+            f"95% Confidence Interval: {confidence_interval[0]:.2f} to {confidence_interval[1]:.2f}"
+        )
 
         sns.set_theme(style="darkgrid", font="serif")
         plt.figure(figsize=(16, 6))

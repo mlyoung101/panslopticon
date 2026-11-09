@@ -4,8 +4,8 @@
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 import psycopg
+import seaborn as sns
 import statsmodels.formula.api as smf
 from patsy import dmatrices
 

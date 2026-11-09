@@ -4,11 +4,11 @@
 # was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 import pickle
 import sqlite3
+
 import matplotlib.pyplot as plt
 from IPython import embed
-from sklearn.decomposition import PCA
-
 from sentence_transformers import SentenceTransformer
+from sklearn.decomposition import PCA
 
 LIMIT = 2000
 
@@ -49,18 +49,8 @@ def cluster():
 
     fig = plt.figure(1, figsize=(8, 6))
     ax = fig.add_subplot(111)
-    ax.scatter(
-        spam_pca[:, 0],
-        spam_pca[:, 1],
-        s=40,
-        label="Spam"
-    )
-    ax.scatter(
-        ham_pca[:, 0],
-        ham_pca[:, 1],
-        s=40,
-        label="Ham"
-    )
+    ax.scatter(spam_pca[:, 0], spam_pca[:, 1], s=40, label="Spam")
+    ax.scatter(ham_pca[:, 0], ham_pca[:, 1], s=40, label="Ham")
     ax.legend()
     plt.show()
 
