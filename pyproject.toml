@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 # due to a UV bug
-requires-python = "==3.13.*"
+requires-python = "==3.10.*"
 dependencies = [
     "connectorx>=0.4.5",
     "dtreeviz>=2.3.2",
@@ -21,23 +21,25 @@ dependencies = [
     "lmppl>=0.3.2",
     "markdown>=3.10.2",
     "markdown-it-py>=4.2.0",
-    "matplotlib>=3.11.1",
+    "matplotlib>=3.*",
     "mdit-plain>=1.0.1",
     "nltk>=3.10.4",
     "notebook>=7.6.0",
-    "numpy>=2.5.1",
-    "pandas>=3.0.5",
+    "numpy>=2.*",
+    "pandas>=2.3.3",
+    "pandas>=2.*",
     "patsy>=1.0.3",
     "plain-text-markdown-extention",
     "psycopg>=3.3.5",
     "pyarrow>=25.0.0",
     "pygithub>=2.10.0",
     "python-dateutil>=2.9.0.post0",
+    "pytorch-triton-rocm>=0.0.1",
     "requests>=2.34.2",
     "rich>=15.0.0",
     "ruff>=0.17.3",
-    "scikit-learn>=1.9.0",
-    "scipy>=1.18.0",
+    "scikit-learn>=1.*",
+    "scipy>=1.*",
     "seaborn>=0.13.2",
     "sentence-transformers>=5.6.1",
     "statsmodels>=0.15.0",
@@ -56,7 +58,18 @@ typeCheckingMode = "standard"
 [tool.uv.sources]
 plain-text-markdown-extention = { git = "https://github.com/kostyachum/python-markdown-plain-text" }
 torch = [
-    { index = "pytorch-rocm" },
+  { index = "pytorch-rocm", marker = "sys_platform == 'linux'" },
+]
+torchvision = [
+  { index = "pytorch-rocm", marker = "sys_platform == 'linux'" },
+]
+# ROCm support relies on both Triton packages, which should also be installed from
+# the PyTorch index (and included in `project.dependencies`).
+pytorch-triton-rocm = [
+  { index = "pytorch-rocm", marker = "sys_platform == 'linux'" },
+]
+triton-rocm = [
+  { index = "pytorch-rocm", marker = "sys_platform == 'linux'" },
 ]
 
 [[tool.uv.index]]
