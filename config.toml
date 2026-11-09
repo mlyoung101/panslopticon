@@ -27,6 +27,7 @@ readme_signals = [
     "(?i)how it works",
     "(?i)(future work)|(suggested milestones)",
     "(?i)agent (skill|contract)",
+    "(?i)(output|input|math[a-z]+|transfer|io) contract",
     "(?i)bring-your-own",
     "(?i)early day.*(bug.*|feedback) welcome",
     "(?i)the point is",
@@ -45,6 +46,12 @@ readme_signals = [
     "(?i)the (.*) owns the (.*),",
     "(?i)(that's|that is) genuinely (interesting|insightful|impressive|enlightening)",
     "(?i)the (.*) is not special",
+    "(?i)what makes it special",
+    "(?i)it's not a .*\\. it's a [a-zA-Z0-9]+\\.",
+    "(?i)here's the (clever|interesting|exciting) part",
+    # experimental: match 2nd/3rd level headers that are written as if answering a question
+    # LLMs seem to do this in my student's marking
+    "(?i)(##|###) why (this|the|does|does not) ([a-z0-9]+ ){2}"
 ]
 
 # Regexes to detect AI coding tools in Git commits
