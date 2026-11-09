@@ -8,9 +8,11 @@ from github import Auth, Github, GithubException
 import re
 import os
 from datetime import datetime, UTC
+from rich import print
 
 REPO_REGEX = re.compile(r"https:\/\/github\.com\/(.*)\/(.*)")
 
+# Records most recent commit dates for all repos. This ideally should be run regularly to keep up to date.
 
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
@@ -26,7 +28,7 @@ if __name__ == "__main__":
             for row in cursor.fetchall():
                 id = row[0]
                 url = row[1]
-                print(f"Update {url} in {db}")
+                print(f"[green]Update {url} in {db}[/green]")
 
                 matches = re.match(REPO_REGEX, url)
                 try:
@@ -43,8 +45,8 @@ if __name__ == "__main__":
                         f"UPDATE {db} SET date_last_seen = %s WHERE id = %s;", (now, id)
                     )
 
-                except GithubException as e:
-                    print(f"Failed to fetch repo {url}: {e}")
+                except Exception as e:
+                    print(f"[bold red]Failed to fetch repo {url}: {e}[/bold red]")
                     # assume dead
                     conn.execute(
                         f"UPDATE {db} SET dead = TRUE WHERE id = %s",

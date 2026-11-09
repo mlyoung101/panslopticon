@@ -8,21 +8,26 @@ from tqdm import tqdm
 from github import Auth, Github, GithubException
 import re
 import os
+from dateutil import parser
+from rich import print
 
 REPO_REGEX = re.compile(r"https:\/\/github\.com\/(.*)\/(.*)")
+DATE_CUTOFF = parser.parse("Wed, 1 Jan 2025 00:00:00 +0000")
 
+# Records date created and stars (and maybe other stats in future). This is a fixup script so it's not
+# intended to be run regularly.
 
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
         cursor = conn.cursor().execute("""
-            SELECT * FROM ham WHERE NOT dead AND (date_created IS NULL OR stars IS NULL)
+            SELECT * FROM slop WHERE NOT dead AND (date_created IS NULL OR stars IS NULL)
         """)
 
         token = Auth.Token(os.environ["GH_PAT"])
         github = Github(auth=token)
 
         print("Fetching data...")
-        for row in tqdm(cursor.fetchall()):
+        for row in cursor.fetchall():
             id = row[0]
             url = row[1]
 
@@ -32,23 +37,27 @@ if __name__ == "__main__":
                 creation_date = repo.created_at
                 stars = repo.stargazers_count
 
-                conn.execute(
-                    "UPDATE ham SET date_created = %s WHERE id = %s",
-                    (creation_date, id),
-                    prepare=True,
-                )
-                conn.execute(
-                    "UPDATE ham SET stars = %s WHERE id = %s",
-                    (stars, id),
-                    prepare=True,
-                )
-            except GithubException as e:
-                print(f"Failed to fetch repo {url}: {e}")
+                if creation_date < DATE_CUTOFF:
+                    print(f"[bold red]Repo {url} created before cutoff, removing[/bold red]")
+                    conn.execute("DELETE FROM slop WHERE id = %s;", id)
+                else:
+                    conn.execute(
+                        "UPDATE slop SET date_created = %s WHERE id = %s",
+                        (creation_date, id),
+                        prepare=True,
+                    )
+                    conn.execute(
+                        "UPDATE slop SET stars = %s WHERE id = %s",
+                        (stars, id),
+                        prepare=True,
+                    )
+                    print(f"[green]Repo {url} - created on {creation_date} - stars {stars}[/green]")
+            except Exception as e:
+                print(f"[bold red]Failed to fetch repo {url}: {e}[/bold red]")
                 # assume dead
                 conn.execute(
-                    "UPDATE ham SET dead = TRUE WHERE id = %s",
+                    "UPDATE slop SET dead = TRUE WHERE id = %s",
                     (id,),
                 )
 
             conn.commit()
-            time.sleep(0.3)

@@ -131,38 +131,6 @@ def train():
     with open("data/X_test_vect.dat", "wb") as f:
         pickle.dump(X_test, f)
 
-    # PCA
-    # print("Doing PCA")
-    # fig = plt.figure(1, figsize=(8, 6))
-    # ax = fig.add_subplot(111)
-    # X_reduced = PCA(n_components=2).fit_transform(X_train_vect)
-    #
-    # scatter = ax.scatter(
-    #     X_reduced[:, 0],
-    #     X_reduced[:, 1],
-    #     c=[0 if x == "spam" else 1 for x in y_train],
-    #     s=40,
-    # )
-    #
-    # ax.set(
-    #     title="First principal components",
-    #     xlabel="1st Principal Component",
-    #     ylabel="2nd Principal Component",
-    # )
-    # ax.xaxis.set_ticklabels([])
-    # ax.yaxis.set_ticklabels([])
-    #
-    # # Add a legend
-    # legend1 = ax.legend(
-    #     scatter.legend_elements()[0],
-    #     ["spam", "ham"],
-    #     loc="upper right",
-    #     title="Classes",
-    # )
-    # ax.add_artist(legend1)
-    #
-    # plt.show()
-
     # based on https://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html
     classifiers = {
         "Naive Bayes": MultinomialNB(),

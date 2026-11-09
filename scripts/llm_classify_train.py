@@ -144,16 +144,8 @@ def train():
         "Naive Bayes": MultinomialNB(),
         "Decision Tree": DecisionTreeClassifier(max_depth=5),
         "KNN": KNeighborsClassifier(5),
-        # "Linear SVM": SVC(kernel="linear", C=0.025),
+        "Linear SVM": SVC(kernel="linear", C=0.025),
         "Random Forest": RandomForestClassifier(max_depth=5, n_estimators=15),
-        # "Logistic Regression": LogisticRegressionCV(
-        #     Cs=np.logspace(-6, 6, 101),
-        #     cv=10,
-        #     l1_ratios=(0,),
-        #     scoring="neg_log_loss",
-        #     max_iter=1_000,
-        #     use_legacy_attributes=False,
-        # ),
     }
 
     for name, classifier in classifiers.items():
@@ -167,10 +159,6 @@ def train():
         rich.print(f"[bold red]Classification report for {name}:[/bold red]\n{report}")
         print(report_to_latex(report))
         print()
-
-        if isinstance(classifier, MultinomialNB):
-            important_features(vectorizer, classifier, 20)
-
 
 if __name__ == "__main__":
     train()

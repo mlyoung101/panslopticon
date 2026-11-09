@@ -162,7 +162,7 @@ excessively_long_readme = 15.0
 threshold = 75
 
 # Ham is considered to be less than or equal to this
-ham_threshold = 40
+ham_threshold = 45
 
 # Storage dataset
 [storage]
