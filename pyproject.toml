@@ -52,6 +52,7 @@ dependencies = [
     "waybackpy>=3.0.6",
     "webio-jupyter-extension>=0.1.0",
     "triton-rocm>=3.0.0rc1",
+    "numba>=0.68.1",
 ]
 
 [tool.basedpyright]

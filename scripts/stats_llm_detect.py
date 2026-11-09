@@ -28,7 +28,6 @@ def preprocess_text(text):
     ]
     return tokens
 
-
 def calculate_burstiness(text):
     tokens = preprocess_text(text)
     word_freq = nltk.FreqDist(tokens)
@@ -50,7 +49,8 @@ tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
 
 
 def compute_perplexity(text):
-    encodings = tokenizer(text, return_tensors="pt")
+    text_trunc = text[0:min(len(text), 1023)]
+    encodings = tokenizer(text_trunc, return_tensors="pt")
     max_length = model.config.n_positions
     stride = 512
     seq_len = encodings.input_ids.size(1)
@@ -100,13 +100,13 @@ if __name__ == "__main__":
         print("Collecting data...")
         slop = pd.read_sql_query(
             """
-            SELECT * FROM full_text WHERE LOWER(file) = 'readme.md' ORDER BY RANDOM() LIMIT 50
+            SELECT * FROM full_text WHERE LOWER(file) = 'readme.md' ORDER BY RANDOM() LIMIT 2500
             """,
             conn,
         )
         ham = pd.read_sql_query(
             """
-            SELECT * FROM ham_full_text WHERE LOWER(file) = 'readme.md' ORDER BY RANDOM() LIMIT 50
+            SELECT * FROM ham_full_text WHERE LOWER(file) = 'readme.md' ORDER BY RANDOM() LIMIT 2500
             """,
             conn,
         )
@@ -119,23 +119,28 @@ if __name__ == "__main__":
             lambda row: calculate_burstiness(row["text"]), axis=1
         )
 
-        print("[green]Compute perplexity scores...[/green]")
-        slop["perplexity"] = slop.swifter.apply(
-            lambda row: compute_perplexity(row["text"]), axis=1
-        )
-        ham["perplexity"] = ham.swifter.apply(
-            lambda row: compute_perplexity(row["text"]), axis=1
-        )
-
-        print("Slop:")
-        print(slop)
-        print("Ham:")
-        print(ham)
-
-        result = ttest_ind(
+        burst = ttest_ind(
             a=slop["burstiness"], b=ham["burstiness"], equal_var=False
         ).pvalue
-        print(f"burstiness p < {result:.16f}")
+        print(f"burstiness p < {burst:.16f}")
 
         print(f"Slop burstiness mean: {slop['burstiness'].mean()}")
         print(f"Ham burstiness mean: {ham['burstiness'].mean()}")
+
+
+        print("[green]Compute perplexity scores...[/green]")
+        # don't parallelise this since it has to run on the GPU
+        slop["perplexity"] = slop.apply(
+            lambda row: compute_perplexity(row["text"]), axis=1
+        )
+        ham["perplexity"] = ham.apply(
+            lambda row: compute_perplexity(row["text"]), axis=1
+        )
+
+        perplex = ttest_ind(
+            a=slop["perplexity"], b=ham["perplexity"], equal_var=False
+        ).pvalue
+        print(f"perplexity p < {perplex:.16f}")
+
+        print(f"Slop perplexity mean: {slop['perplexity'].mean()}")
+        print(f"Ham perplexity mean: {ham['perplexity'].mean()}")
