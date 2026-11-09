@@ -24,7 +24,7 @@ if __name__ == "__main__":
             token = Auth.Token(os.environ["GH_PAT"])
             github = Github(auth=token)
 
-            print("Fetching data...")
+            print(f"Fetching data for db {db}...")
             for row in cursor.fetchall():
                 id = row[0]
                 url = row[1]
