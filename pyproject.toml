@@ -19,6 +19,7 @@ dependencies = [
     "jupytext>=1.19.4",
     "lifelines>=0.30.0",
     "lmppl>=0.3.2",
+    "lmscan>=0.6.1",
     "markdown>=3.10.2",
     "markdown-it-py>=4.2.0",
     "matplotlib>=3.11.1",

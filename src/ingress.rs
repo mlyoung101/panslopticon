@@ -185,6 +185,9 @@ pub async fn ingress_ham(config: PathBuf, db_url: String) -> color_eyre::Result<
 
     info!("Ham: {:?}", resolved_tags);
 
+    info!("First, locate ham via stars reconstruction");
+    // select * from star_counts where count >= 200 and url not in (select url from ham) and url not in (select url from slop) and url not in (select url from not_slop) order by random();
+
     for topic in &resolved_tags {
         // this is because GH will only let us see the first 1000 items; we have to be a bit careful
         let page = rand::random_range(1..10);

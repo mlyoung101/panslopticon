@@ -10,16 +10,16 @@ from IPython import embed
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 
-LIMIT = 2000
+LIMIT = 1000
 
 
 def load_data() -> tuple[list, list]:
     conn = sqlite3.connect("data/panslop.db")
     spam = conn.execute(
-        f"SELECT text FROM full_text ORDER BY RANDOM() LIMIT {LIMIT}"
+        f"SELECT text FROM full_text WHERE lower(file) = 'readme.md' ORDER BY RANDOM() LIMIT {LIMIT}"
     ).fetchall()
     ham = conn.execute(
-        f"SELECT text FROM ham_full_text ORDER BY RANDOM() LIMIT {LIMIT}"
+        f"SELECT text FROM ham_full_text WHERE lower(file) = 'readme.md' ORDER BY RANDOM() LIMIT {LIMIT}"
     ).fetchall()
     conn.close()
 
@@ -30,9 +30,7 @@ def cluster():
     print("Loading data...")
     spam, ham = load_data()
 
-    transformer = SentenceTransformer(
-        "sentence-transformers/all-MiniLM-L6-v2", cache_folder="/var/tmp/transformers"
-    )
+    transformer = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     spam_transformed = transformer.encode(spam, show_progress_bar=True)
     ham_transformed = transformer.encode(ham, show_progress_bar=True)
 
@@ -49,9 +47,14 @@ def cluster():
 
     fig = plt.figure(1, figsize=(8, 6))
     ax = fig.add_subplot(111)
-    ax.scatter(spam_pca[:, 0], spam_pca[:, 1], s=40, label="Spam")
-    ax.scatter(ham_pca[:, 0], ham_pca[:, 1], s=40, label="Ham")
+    ax.scatter(spam_pca[:, 0], spam_pca[:, 1], s=20, label="Slop", alpha=0.5)
+    ax.scatter(ham_pca[:, 0], ham_pca[:, 1], s=20, label="Ham", alpha=0.5)
+    ax.set_title("Slop. vs ham sentence embedding PCA")
+    # https://stackoverflow.com/a/53219684/5007892
+    # fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+    # plt.tight_layout(pad=-5)
     ax.legend()
+    plt.savefig("plot.pdf", bbox_inches="tight")
     plt.show()
 
     embed()
