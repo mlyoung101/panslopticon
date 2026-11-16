@@ -66,3 +66,5 @@ if __name__ == "__main__":
                 )
 
             conn.commit()
+
+    print("[green]Process completed.[/green]")

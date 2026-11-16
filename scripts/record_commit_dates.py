@@ -7,9 +7,8 @@ import re
 from datetime import UTC, datetime
 
 import psycopg
-from github import Auth, Github, GithubException
+from github import Auth, Github
 from rich import print
-from tqdm import tqdm
 
 REPO_REGEX = re.compile(r"https:\/\/github\.com\/(.*)\/(.*)")
 
@@ -55,3 +54,5 @@ if __name__ == "__main__":
                     )
 
                 conn.commit()
+
+    print("[green]Process completed.[/green]")

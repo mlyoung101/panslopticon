@@ -1609,6 +1609,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/02/ee/6d281f9c166846af1a91b13805b102a954e444f46cfc7bf175b96f8dd2cc/lmppl-0.3.2.tar.gz", hash = "sha256:1c9d968211e0650aee179bc56c185fbc505c4f168eda1a557ba0239fdd397730", size = 12107, upload-time = "2024-08-20T14:45:07.019Z" }
 
 [[package]]
+name = "lmscan"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2a/17/a2ee65891ebcaa1317252f2f4b20bdd9f104c35e275cd9903fcc95df7bb5/lmscan-0.6.1.tar.gz", hash = "sha256:a97099fc38411beb326478e4b4cdb2ac629744e011b1b923860f80b5dc28f601", size = 103114, upload-time = "2026-04-11T22:02:05.137Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a2/7f/99ec85c4a4548acb584ca2a07075717d689c3b3748380f1fb03e05780ff3/lmscan-0.6.1-py3-none-any.whl", hash = "sha256:05d44f28baa9f21f44e6f45fad5b3d3e69cba41e23d6c8da3d0ae9699656dbec", size = 50751, upload-time = "2026-04-11T22:02:03.896Z" },
+]
+
+[[package]]
 name = "locket"
 version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2222,6 +2231,7 @@ dependencies = [
     { name = "jupytext" },
     { name = "lifelines" },
     { name = "lmppl" },
+    { name = "lmscan" },
     { name = "markdown" },
     { name = "markdown-it-py" },
     { name = "matplotlib" },
@@ -2268,6 +2278,7 @@ requires-dist = [
     { name = "jupytext", specifier = ">=1.19.4" },
     { name = "lifelines", specifier = ">=0.30.0" },
     { name = "lmppl", specifier = ">=0.3.2" },
+    { name = "lmscan", specifier = ">=0.6.1" },
     { name = "markdown", specifier = ">=3.10.2" },
     { name = "markdown-it-py", specifier = ">=4.2.0" },
     { name = "matplotlib", specifier = ">=3.11.1" },
