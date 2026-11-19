@@ -8,7 +8,7 @@ import time
 
 import psycopg
 from dateutil import parser
-from github import Auth, Github, GithubException
+from github import Auth, Github, GithubException, UnknownObjectException
 from rich import print
 from tqdm import tqdm
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
                     print(
                         f"[bold red]Repo {url} created before cutoff, removing[/bold red]"
                     )
-                    conn.execute("DELETE FROM slop WHERE id = %s;", id)
+                    conn.execute("DELETE FROM slop WHERE id = %s;", (id,))
                 else:
                     conn.execute(
                         "UPDATE slop SET date_created = %s WHERE id = %s",
@@ -57,7 +57,7 @@ if __name__ == "__main__":
                     print(
                         f"[green]Repo {url} - created on {creation_date} - stars {stars}[/green]"
                     )
-            except Exception as e:
+            except UnknownObjectException as e:
                 print(f"[bold red]Failed to fetch repo {url}: {e}[/bold red]")
                 # assume dead
                 conn.execute(
