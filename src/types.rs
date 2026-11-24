@@ -8,12 +8,20 @@ use std::collections::{HashMap, HashSet};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::*;
+use strum_macros::{Display, EnumString};
+use clap::ValueEnum;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Platform {
     GitHub,
     Reddit,
     Unknown,
+}
+
+#[derive(Debug, Clone, Display, EnumString, ValueEnum, PartialEq)]
+pub enum Classification {
+    Ham,
+    Slop,
 }
 
 #[derive(Debug, FromRow, Clone)]

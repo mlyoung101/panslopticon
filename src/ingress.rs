@@ -6,14 +6,16 @@
 use std::{collections::HashSet, path::PathBuf, time::Duration};
 
 use chrono::{DateTime, Utc};
+use color_eyre::eyre::eyre;
 use log::{info, warn};
-use octocrab::models::Repository;
+use octocrab::{Octocrab, models::Repository};
+use regex::Regex;
 use sqlx::{PgPool, Pool, Postgres};
 
 use crate::{
     analyser::{calculate_score, update_full_text},
     repo::GhRemoteRepo,
-    types::PanslopConfig,
+    types::{Classification, PanslopConfig},
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -49,8 +51,8 @@ async fn is_already_slop(url: &String, db: &Pool<Postgres>) -> color_eyre::Resul
     Ok(result > 0)
 }
 
-/// Ingresses one repo
-async fn do_ingress_repo(
+/// Ingresses one slop repo
+async fn do_ingress_slop_repo(
     config: &PanslopConfig,
     db: &Pool<Postgres>,
     repo: &Repository,
@@ -101,6 +103,90 @@ async fn do_ingress_repo(
     Ok(())
 }
 
+async fn do_ingress_ham_repo(
+    config: &PanslopConfig,
+    db: &Pool<Postgres>,
+    repo: &Repository,
+    topic: &String,
+) -> color_eyre::Result<()> {
+    let now = Utc::now().naive_utc();
+    let url = repo.html_url.as_ref().expect("no HTML URL");
+
+    if is_already_slop(&url.to_string(), &db).await? {
+        warn!("Good repo {} is already somehow slop? Skipping.", url);
+        return Ok(());
+    }
+
+    if is_definitely_not_slop(&url.to_string(), &db).await? {
+        warn!("Repo {} already recorded as ham or not_slop, skipping", url);
+        return Ok(());
+    }
+
+    info!("Confirming repo {} is not slop", url);
+    let remote = GhRemoteRepo::new(url.to_string());
+    let local = remote.clone().await?;
+
+    let Ok((score, _)) = calculate_score(&config, &local).await else {
+        warn!("Failed to calculate score for ham repo: {}", url);
+        return Err(eyre!("Failed to calculate score"));
+    };
+
+    if score <= config.scoring.ham_threshold {
+        info!("Repo {} is confirmed ham, processing full text", url);
+
+        let id = sqlx::query!(
+        r#"
+            INSERT INTO ham (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen, dead)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING id;
+        "#,
+            url.to_string(),
+            now,
+            score as f32,
+            VERSION,
+            "github",
+            format!("tag-{}", topic),
+            now
+        )
+        .fetch_one(db)
+        .await?.id;
+
+        let Ok(_) = update_full_text(id, &local, &db, true).await else {
+            warn!("Failed to update full text for ham repo: {}", url);
+            return Err(eyre!("Failed to parse full text"));
+        };
+    } else {
+        warn!(
+            "Ham repo {} is in fact slop!! (score={}), adding to the slop table instead",
+            url, score
+        );
+
+        let id = sqlx::query!(
+        r#"
+            INSERT INTO slop (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen, dead)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING id;
+        "#,
+            url.to_string(),
+            now,
+            score as f32,
+            VERSION,
+            "github",
+            format!("tag-{}", topic),
+            now
+        )
+        .fetch_one(db)
+        .await?.id;
+
+        match update_full_text(id, &local, &db, false).await {
+            Ok(_) => {}
+            Err(e) => {
+                warn!("Failed to update full text for ham repo {url}: {e}");
+                return Err(eyre!("Failed to parse full text"));
+            }
+        };
+    }
+    Ok(())
+}
+
 pub async fn ingress_gh(config: PathBuf, db_url: String) -> color_eyre::Result<()> {
     info!(
         "Start GitHub ingress process. Config: {}, DB URL: {}",
@@ -130,7 +216,15 @@ pub async fn ingress_gh(config: PathBuf, db_url: String) -> color_eyre::Result<(
             .await?;
 
         for repo in &result.items {
-            do_ingress_repo(&config_parsed, &db, repo, &source).await?;
+            match do_ingress_slop_repo(&config_parsed, &db, repo, &source).await {
+                Ok(_) => {}
+                // report error, but keep ploughing through our ingress items
+                Err(error) => warn!(
+                    "Ham repo ingress for {} failed: {}",
+                    repo.html_url.as_ref().unwrap().as_str(),
+                    error
+                ),
+            }
         }
 
         info!("Waiting for rate limit...");
@@ -152,7 +246,7 @@ pub async fn ingress_gh(config: PathBuf, db_url: String) -> color_eyre::Result<(
             .await?;
 
         for repo in &result.items {
-            do_ingress_repo(&config_parsed, &db, repo, &"broad_search".to_string()).await?;
+            do_ingress_slop_repo(&config_parsed, &db, repo, &"broad_search".to_string()).await?;
         }
 
         info!("Waiting for rate limit...");
@@ -187,6 +281,7 @@ pub async fn ingress_ham(config: PathBuf, db_url: String) -> color_eyre::Result<
 
     info!("First, locate ham via stars reconstruction");
     // select * from star_counts where count >= 200 and url not in (select url from ham) and url not in (select url from slop) and url not in (select url from not_slop) order by random();
+    // TODO
 
     for topic in &resolved_tags {
         // this is because GH will only let us see the first 1000 items; we have to be a bit careful
@@ -210,83 +305,61 @@ pub async fn ingress_ham(config: PathBuf, db_url: String) -> color_eyre::Result<
         info!("Retrieved {} items", result.items.len());
 
         for repo in result.items {
-            let now = Utc::now().naive_utc();
-            let url = repo.html_url.expect("no HTML URL");
-
-            if is_already_slop(&url.to_string(), &db).await? {
-                warn!("Good repo {} is already somehow slop? Skipping.", url);
-                continue;
-            }
-
-            if is_definitely_not_slop(&url.to_string(), &db).await? {
-                warn!("Repo {} already recorded as ham or not_slop, skipping", url);
-                continue;
-            }
-
-            info!("Confirming repo {} is not slop", url);
-            let remote = GhRemoteRepo::new(url.to_string());
-            let local = remote.clone().await?;
-
-            let Ok((score, _)) = calculate_score(&config_parsed, &local).await else {
-                warn!("Failed to calculate score for ham repo: {}", url);
-                continue;
-            };
-
-            if score <= config_parsed.scoring.ham_threshold {
-                info!("Repo {} is confirmed ham, processing full text", url);
-
-                let id = sqlx::query!(
-                r#"
-                    INSERT INTO ham (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen, dead)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING id;
-                "#,
-                    url.to_string(),
-                    now,
-                    score as f32,
-                    VERSION,
-                    "github",
-                    format!("tag-{}", topic),
-                    now
-                )
-                .fetch_one(&db)
-                .await?.id;
-
-                let Ok(_) = update_full_text(id, &local, &db, true).await else {
-                    warn!("Failed to update full text for ham repo: {}", url);
-                    continue;
-                };
-            } else {
-                warn!(
-                    "Ham repo {} is in fact slop!! (score={}), adding to the slop table instead",
-                    url, score
-                );
-
-                let id = sqlx::query!(
-                r#"
-                    INSERT INTO slop (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen, dead)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING id;
-                "#,
-                    url.to_string(),
-                    now,
-                    score as f32,
-                    VERSION,
-                    "github",
-                    format!("tag-{}", topic),
-                    now
-                )
-                .fetch_one(&db)
-                .await?.id;
-
-                let Ok(_) = update_full_text(id, &local, &db, true).await else {
-                    warn!("Failed to update full text for ham repo: {}", url);
-                    continue;
-                };
-            }
+            do_ingress_ham_repo(&config_parsed, &db, &repo, topic).await?;
         }
 
         info!("Waiting for rate limit...");
         std::thread::sleep(Duration::from_secs(10)); // rate limits!!
     }
+
+    Ok(())
+}
+
+pub async fn manual_ingress(
+    config: PathBuf,
+    classification: Classification,
+    repo_url: String,
+    db_url: String,
+) -> color_eyre::Result<()> {
+    info!(
+        "Manual ingress {repo_url} of type {classification}. Config: {}, DB URL: {db_url}",
+        config.to_string_lossy(),
+    );
+
+    if classification != Classification::Ham {
+        // TODO
+        return Err(eyre!("Unhandled!"));
+    }
+
+    let config_str = std::fs::read_to_string(config)?;
+    let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
+
+    let api = match std::env::var("GH_PAT") {
+        Ok(pat) => {
+            info!("Using GH PAT");
+            Octocrab::builder().personal_token(pat).build().expect("build with PAT failed")
+        },
+        Err(_) => Octocrab::builder().build().expect("failed to build Octocrab")
+    };
+
+    let repo_regex = Regex::new(r"https:\/\/github\.com\/(.*)\/(.*)")?;
+    let owner = repo_regex
+        .captures(&repo_url)
+        .expect("no captures")
+        .get(1)
+        .expect("could not extract owner")
+        .as_str();
+    let rep = repo_regex
+        .captures(&repo_url)
+        .expect("no captures")
+        .get(2)
+        .expect("could not extract repo")
+        .as_str();
+
+    let repo = api.repos(owner, rep).get().await?;
+    let db = PgPool::connect(&db_url.clone()).await?;
+
+    do_ingress_ham_repo(&config_parsed, &db, &repo, &"manual-ingress".to_string()).await?;
 
     Ok(())
 }

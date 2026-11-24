@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                    INSERT INTO slop (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen, dead)\n                    VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING id;\n                ",
+  "query": "\n            INSERT INTO ham (url, date_added, score, panslop_version, origin_platform, origin_src, date_last_seen, dead)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING id;\n        ",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Int8",
         "origin": {
           "Table": {
-            "table": "slop",
+            "table": "ham",
             "name": "id"
           }
         }
@@ -30,5 +30,5 @@
       false
     ]
   },
-  "hash": "989b83f0bf11cd5c07060575441b7100c263fae44271a20fe4a826a43365bce5"
+  "hash": "418769177a47279039a32838cbe16de9c63fe24c9eedc4a626df35e7c6c763fa"
 }

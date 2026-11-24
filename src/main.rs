@@ -9,7 +9,7 @@ use clap::{Parser, Subcommand};
 use env_logger::{Builder, Env};
 use log::{error, info};
 
-use crate::{repo::GhRemoteRepo, types::PanslopConfig, update::reconsider};
+use crate::{repo::GhRemoteRepo, types::{Classification, PanslopConfig}, update::reconsider};
 
 pub mod analyser;
 pub mod ingress;
@@ -66,6 +66,19 @@ enum Commands {
         config: PathBuf,
     },
 
+    /// Manually ingress a repo with the specified classification type.
+    #[command()]
+    ManualIngress {
+        /// Config TOML path
+        config: PathBuf,
+
+        /// What we think this data is
+        classification: Classification,
+
+        // URL to repo
+        url: String,
+    },
+
     /// Prints version information.
     #[command()]
     Version {},
@@ -113,6 +126,7 @@ async fn main() -> color_eyre::Result<()> {
         Commands::Reconsider { config } => reconsider(config, db_url).await?,
         Commands::Update { config } => update::update_all(config, db_url).await?,
         Commands::HamIngress { config } => ingress::ingress_ham(config, db_url).await?,
+        Commands::ManualIngress { config , classification, url } => ingress::manual_ingress(config, classification, url, db_url).await?,
         Commands::Version {} => println!(
             "Panslopticon v{} - Copyright (c) 2026 Mel Young. MPL 2.0.\nUpstream: https://forgejo.mlyoung.cool/mel/panslopticon",
             VERSION
