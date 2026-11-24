@@ -3,12 +3,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL
 // was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::{collections::HashSet, path::PathBuf, time::Duration};
+use std::{collections::HashSet, path::PathBuf, sync::Arc, time::Duration};
 
 use chrono::{DateTime, Utc};
 use color_eyre::eyre::eyre;
 use log::{info, warn};
-use octocrab::{Octocrab, models::Repository};
+use octocrab::{Octocrab, models::Repository, service::middleware::retry::{NoOpRateLimitMetrics, RetryConfig}};
 use regex::Regex;
 use sqlx::{PgPool, Pool, Postgres};
 
@@ -337,9 +337,20 @@ pub async fn manual_ingress(
     let api = match std::env::var("GH_PAT") {
         Ok(pat) => {
             info!("Using GH PAT");
-            Octocrab::builder().personal_token(pat).build().expect("build with PAT failed")
-        },
-        Err(_) => Octocrab::builder().build().expect("failed to build Octocrab")
+            Octocrab::builder()
+                .personal_token(pat)
+                .add_retry_config(RetryConfig::HandleRateLimits {
+                    metrics: Arc::new(NoOpRateLimitMetrics),
+                    max_retries: 4,
+                    min_wait_seconds: 60,
+                    retry_on_forbidden: true,
+                })
+                .build()
+                .expect("build with PAT failed")
+        }
+        Err(_) => Octocrab::builder()
+            .build()
+            .expect("failed to build Octocrab"),
     };
 
     let repo_regex = Regex::new(r"https:\/\/github\.com\/(.*)\/(.*)")?;
