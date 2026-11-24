@@ -8,7 +8,7 @@ import time
 
 import psycopg
 from dateutil import parser
-from github import Auth, Github, GithubException
+from github import Auth, Github, GithubException, UnknownObjectException
 from rich import print
 from tqdm import tqdm
 
@@ -20,51 +20,52 @@ DATE_CUTOFF = parser.parse("Wed, 1 Jan 2025 00:00:00 +0000")
 
 if __name__ == "__main__":
     with psycopg.connect("host=lagoon user=postgres dbname=panslopticon") as conn:
-        cursor = conn.cursor().execute("""
-            SELECT * FROM slop WHERE NOT dead AND (date_created IS NULL OR stars IS NULL)
-        """)
-
         token = Auth.Token(os.environ["GH_PAT"])
         github = Github(auth=token)
 
-        print("Fetching data...")
-        for row in cursor.fetchall():
-            id = row[0]
-            url = row[1]
+        for db in ("ham", "slop"):
+            cursor = conn.cursor().execute(f"""
+                SELECT * FROM {db} WHERE NOT dead AND (date_created IS NULL OR stars IS NULL)
+            """)
 
-            matches = re.match(REPO_REGEX, url)
-            try:
-                repo = github.get_repo(f"{matches.group(1)}/{matches.group(2)}")
-                creation_date = repo.created_at
-                stars = repo.stargazers_count
+            print(f"Fetching data from db {db}...")
+            for row in cursor.fetchall():
+                id = row[0]
+                url = row[1]
 
-                if creation_date < DATE_CUTOFF:
-                    print(
-                        f"[bold red]Repo {url} created before cutoff, removing[/bold red]"
-                    )
-                    conn.execute("DELETE FROM slop WHERE id = %s;", id)
-                else:
+                matches = re.match(REPO_REGEX, url)
+                try:
+                    repo = github.get_repo(f"{matches.group(1)}/{matches.group(2)}")
+                    creation_date = repo.created_at
+                    stars = repo.stargazers_count
+
+                    if creation_date < DATE_CUTOFF and db == "slop":
+                        print(
+                            f"[bold red]Slop repo {url} created before cutoff, removing[/bold red]"
+                        )
+                        conn.execute("DELETE FROM slop WHERE id = %s;", (id,))
+                    else:
+                        conn.execute(
+                            f"UPDATE {db} SET date_created = %s WHERE id = %s",
+                            (creation_date, id),
+                            prepare=True,
+                        )
+                        conn.execute(
+                            f"UPDATE {db} SET stars = %s WHERE id = %s",
+                            (stars, id),
+                            prepare=True,
+                        )
+                        print(
+                            f"[green]Repo {url} - db {db} - created on {creation_date} - stars {stars}[/green]"
+                        )
+                except UnknownObjectException as e:
+                    print(f"[bold red]Failed to fetch repo {url}: {e}[/bold red]")
+                    # assume dead
                     conn.execute(
-                        "UPDATE slop SET date_created = %s WHERE id = %s",
-                        (creation_date, id),
-                        prepare=True,
+                        f"UPDATE {db} SET dead = TRUE WHERE id = %s",
+                        (id,),
                     )
-                    conn.execute(
-                        "UPDATE slop SET stars = %s WHERE id = %s",
-                        (stars, id),
-                        prepare=True,
-                    )
-                    print(
-                        f"[green]Repo {url} - created on {creation_date} - stars {stars}[/green]"
-                    )
-            except Exception as e:
-                print(f"[bold red]Failed to fetch repo {url}: {e}[/bold red]")
-                # assume dead
-                conn.execute(
-                    "UPDATE slop SET dead = TRUE WHERE id = %s",
-                    (id,),
-                )
 
-            conn.commit()
+                conn.commit()
 
-    print("[green]Process completed.[/green]")
+        print("[green]Process completed.[/green]")

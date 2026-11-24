@@ -54,6 +54,8 @@ readme_signals = [
     "(?i)that's (not )?a .*\\. (that's|it's) (not)?a .*\\.",
     # "Observations that shaped the design"
     "(?i).*that shaped the.*",
+    # "An X implies a Y. It does not imply a Z."
+    "(?i)implies (a|an) .*\\. (it|that) (does|doesn't|does not)( necessarily)? imply"
 ]
 
 # Regexes to detect AI coding tools in Git commits
