@@ -334,6 +334,14 @@ pub async fn manual_ingress(
     let config_str = std::fs::read_to_string(config)?;
     let config_parsed: PanslopConfig = toml::from_str(&config_str)?;
 
+    let db = PgPool::connect(&db_url.clone()).await?;
+
+    // first check if we already have it and skip everything to reduce API load
+    if is_definitely_not_slop(&repo_url, &db).await? || is_already_slop(&repo_url, &db).await? {
+        info!("Repo already recorded, not processing further");
+        return Ok(());
+    }
+
     let api = match std::env::var("GH_PAT") {
         Ok(pat) => {
             info!("Using GH PAT");
@@ -368,7 +376,6 @@ pub async fn manual_ingress(
         .as_str();
 
     let repo = api.repos(owner, rep).get().await?;
-    let db = PgPool::connect(&db_url.clone()).await?;
 
     do_ingress_ham_repo(&config_parsed, &db, &repo, &"manual-ingress".to_string()).await?;
 
